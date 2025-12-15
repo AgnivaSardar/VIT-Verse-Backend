@@ -1,0 +1,228 @@
+// schema.prisma
+
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Users {
+  userID    BigInt   @id @default(autoincrement())
+  userName  String
+  userEmail String   @unique
+  userPhone BigInt?
+  role      String   @default("student")
+  createdAt DateTime @default(now())
+
+  student   Student?
+  teacher   Teacher?
+  channels  Channel[]
+  subscriptions Subscription[]
+  comments  Comments[]
+  likes     Likes[]
+  playlists Playlist[]
+  notifications Notifications[]
+  views     Views[]
+  reports   Reports[]        @relation("ReportReporter")
+}
+
+model Student {
+  studentRegID  BigInt @id
+  userID        BigInt @unique
+  studentBranch String
+  studentYear   Int
+
+  user Users @relation(fields: [userID], references: [userID], onDelete: Cascade)
+}
+
+model Teacher {
+  teacherID     BigInt @id @default(autoincrement())
+  userID        BigInt @unique
+  teacherSchool String
+
+  user Users @relation(fields: [userID], references: [userID], onDelete: Cascade)
+}
+
+model Channel {
+  channelID          BigInt   @id @default(autoincrement())
+  userID             BigInt
+  channelName        String
+  channelType        String
+  channelSubscribers BigInt   @default(0)
+  isPremium          Boolean  @default(false)
+  createdAt          DateTime @default(now())
+
+  user          Users          @relation(fields: [userID], references: [userID], onDelete: Cascade)
+  videos        Video[]
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  subID       BigInt   @id @default(autoincrement())
+  userID      BigInt
+  channelID   BigInt
+  subscribedAt DateTime @default(now())
+
+  user    Users   @relation(fields: [userID], references: [userID], onDelete: Cascade)
+  channel Channel @relation(fields: [channelID], references: [channelID], onDelete: Cascade)
+
+  @@unique([userID, channelID])
+}
+
+model Video {
+  vidID       BigInt   @id @default(autoincrement())
+  channelID   BigInt
+  title       String
+  description String?
+  duration    Int?
+  visibility  String   @default("public")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+  tags        String[] // TEXT[]
+
+  s3Bucket          String?
+  s3KeyOriginal     String?
+  s3KeyProcessed    String?
+  cloudflareVID     String?
+  cloudflarePlaybackURL String?
+  resolution        String?
+  sizeBytes         BigInt?
+  codec             String?
+  processingStatus  String   @default("UPLOADED")
+
+  channel    Channel      @relation(fields: [channelID], references: [channelID], onDelete: Cascade)
+  images     Image[]
+  comments   Comments[]
+  likes      Likes[]
+  playlistVideos PlaylistVideos[]
+  views      Views[]
+  stats      VideoStats?
+  reports    Reports[]
+}
+
+model Image {
+  imgID     BigInt   @id @default(autoincrement())
+  vidID     BigInt
+  s3Bucket  String?
+  s3Key     String?
+  imgURL    String
+  isPrimary Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  video Video @relation(fields: [vidID], references: [vidID], onDelete: Cascade)
+}
+
+model Comments {
+  commID     BigInt   @id @default(autoincrement())
+  userID     BigInt
+  vidID      BigInt
+  description String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now())
+
+  user  Users @relation(fields: [userID], references: [userID], onDelete: Cascade)
+  video Video @relation(fields: [vidID], references: [vidID], onDelete: Cascade)
+  reports Reports[]
+}
+
+model Likes {
+  likeID    BigInt   @id @default(autoincrement())
+  userID    BigInt
+  vidID     BigInt
+  createdAt DateTime @default(now())
+
+  user  Users @relation(fields: [userID], references: [userID], onDelete: Cascade)
+  video Video @relation(fields: [vidID], references: [vidID], onDelete: Cascade)
+
+  @@unique([userID, vidID])
+}
+
+model Playlist {
+  pID        BigInt   @id @default(autoincrement())
+  userID     BigInt
+  name       String
+  description String?
+  isPublic   Boolean  @default(true)
+  isPremium  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now())
+
+  user    Users           @relation(fields: [userID], references: [userID], onDelete: Cascade)
+  videos  PlaylistVideos[]
+}
+
+model PlaylistVideos {
+  pvID     BigInt   @id @default(autoincrement())
+  pID      BigInt
+  vidID    BigInt
+  position Int
+  addedAt  DateTime @default(now())
+
+  playlist Playlist @relation(fields: [pID], references: [pID], onDelete: Cascade)
+  video    Video    @relation(fields: [vidID], references: [vidID], onDelete: Cascade)
+
+  @@unique([pID, vidID])
+}
+
+model Views {
+  viewID    BigInt   @id @default(autoincrement())
+  userID    BigInt?
+  vidID     BigInt
+  watchedAt DateTime @default(now())
+  watchTime Int?
+  ipAddress String?  // INET -> String in Prisma
+  userAgent String?
+
+  user  Users? @relation(fields: [userID], references: [userID], onDelete: SetNull)
+  video Video  @relation(fields: [vidID], references: [vidID], onDelete: Cascade)
+}
+
+model VideoStats {
+  vidID        BigInt   @id
+  viewsCount   BigInt   @default(0)
+  likesCount   BigInt   @default(0)
+  commentsCount BigInt  @default(0)
+  updatedAt    DateTime @default(now())
+
+  video Video @relation(fields: [vidID], references: [vidID], onDelete: Cascade)
+}
+
+model Reports {
+  reportID   BigInt   @id @default(autoincrement())
+  reporterID BigInt
+  vidID      BigInt?
+  commID     BigInt?
+  reason     String
+  status     String   @default("OPEN")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now())
+
+  reporter Users    @relation("ReportReporter", fields: [reporterID], references: [userID], onDelete: Cascade)
+  video    Video?   @relation(fields: [vidID], references: [vidID], onDelete: Cascade)
+  comment  Comments? @relation(fields: [commID], references: [commID], onDelete: Cascade)
+}
+
+model Notifications {
+  notifID   BigInt   @id @default(autoincrement())
+  userID    BigInt
+  type      String
+  entityID  BigInt?
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user Users @relation(fields: [userID], references: [userID], onDelete: Cascade)
+}
+
+model Jobs {
+  jobID     BigInt   @id @default(autoincrement())
+  type      String
+  payload   Json
+  status    String   @default("PENDING")
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+}
