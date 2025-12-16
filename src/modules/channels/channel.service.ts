@@ -1,8 +1,4 @@
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { prisma } from '../../config/prisma';
 import { AppError, ValidationError } from '../../common/errors';
-import { config } from '../../config/env';
 import * as channelRepo from './channel.repository';
 import { CreateChannelRequest, UpdateChannelRequest } from './channel.types';
 
