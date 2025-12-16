@@ -1,0 +1,53 @@
+import { prisma } from "../../config/prisma";
+
+export async function getChannelByID(id: bigint) {
+  return prisma.channel.findUnique({
+    where: { channelID: id },
+  });
+}
+
+export async function getChannelByNameAndUser(channelName: string, userID: bigint) {
+  return prisma.channel.findFirst({
+    where: { channelName: channelName, userID: userID },
+  });
+}
+
+export async function createChannel(data: {
+  userID: bigint;
+  channelName: string;
+    channelDescription: string;
+    channelType: 'public' | 'private' | 'protected';
+    channelSubscribers: bigint[];
+    isPremium: boolean;
+}) {
+  return prisma.channel.create({
+    data: {
+      userID: data.userID,
+      channelName: data.channelName,
+      channelDescription: data.channelDescription,
+      channelType: data.channelType,
+      channelSubscribers: data.channelSubscribers[0], // Store only the first subscriber, or adjust as needed
+      isPremium: data.isPremium,
+    },
+  });
+}
+
+export async function updateChannel(id: bigint, data: {
+    channelName?: string;
+    channelDescription?: string;
+    channelType?: 'public' | 'private' | 'protected';
+    channelSubscribers?: bigint; // Change to single bigint
+    isPremium?: boolean;
+}) {
+  return prisma.channel.update({
+    where: { channelID: id },
+    data: data,
+  });
+}
+
+export async function deleteChannel(id: bigint) {
+  return prisma.channel.delete({
+    where: { channelID: id },
+  });
+}
+

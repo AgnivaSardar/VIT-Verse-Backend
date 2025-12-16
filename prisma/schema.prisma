@@ -50,9 +50,11 @@ model Channel {
   channelID          BigInt   @id @default(autoincrement())
   userID             BigInt
   channelName        String
+  channelDescription  String
   channelType        String
   channelSubscribers BigInt   @default(0)
   isPremium          Boolean  @default(false)
+  isPresent           Boolean @default(true)
   createdAt          DateTime @default(now())
 
   user          Users          @relation(fields: [userID], references: [userID], onDelete: Cascade)
