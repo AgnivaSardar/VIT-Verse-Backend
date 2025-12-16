@@ -28,3 +28,5 @@ export function requireAuth(req: AuthRequest, _res: Response, next: NextFunction
     throw new AuthError("Invalid token");
   }
 }
+
+export const authMiddleware = requireAuth;
