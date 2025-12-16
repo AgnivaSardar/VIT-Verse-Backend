@@ -12,6 +12,7 @@ model Users {
   userID    BigInt   @id @default(autoincrement())
   userName  String
   userEmail String   @unique
+  userPassword String
   userPhone BigInt?
   role      String   @default("student")
   createdAt DateTime @default(now())
