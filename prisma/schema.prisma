@@ -16,6 +16,7 @@ model Users {
   userPhone BigInt?
   role      String   @default("student")
   createdAt DateTime @default(now())
+  isActive  Boolean
 
   student   Student?
   teacher   Teacher?
@@ -30,7 +31,7 @@ model Users {
 }
 
 model Student {
-  studentRegID  BigInt @id
+  studentRegID  String @id
   userID        BigInt @unique
   studentBranch String
   studentYear   Int
@@ -39,7 +40,7 @@ model Student {
 }
 
 model Teacher {
-  teacherID     BigInt @id @default(autoincrement())
+  teacherID     String @id
   userID        BigInt @unique
   teacherSchool String
 
