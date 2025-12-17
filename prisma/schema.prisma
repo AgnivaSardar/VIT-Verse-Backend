@@ -196,6 +196,7 @@ model VideoStats {
 model Reports {
   reportID   BigInt   @id @default(autoincrement())
   reporterID BigInt
+  reportedUserID BigInt?
   vidID      BigInt?
   commID     BigInt?
   reason     String
