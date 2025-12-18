@@ -189,6 +189,8 @@ model VideoStats {
   viewsCount   BigInt   @default(0)
   likesCount   BigInt   @default(0)
   commentsCount BigInt  @default(0)
+  sharesCount   BigInt  @default(0)
+  createdAt     DateTime @default(now())
   updatedAt    DateTime @default(now())
 
   video Video @relation(fields: [vidID], references: [vidID], onDelete: Cascade)
