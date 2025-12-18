@@ -1,0 +1,42 @@
+// src/modules/tags/tag.service.ts
+import { tagRepository } from './tag.repository';
+import type { CreateTagInput, UpdateTagInput } from './tag.types';
+
+export const tagService = {
+  async createTag(data: CreateTagInput) {
+    return tagRepository.createOrGet(data);
+  },
+
+  async getTagById(id: bigint) {
+    const tag = await tagRepository.findById(id);
+    if (!tag) throw new Error('Tag not found');
+    return tag;
+  },
+
+  async listPopularTags(limit = 20, page = 1) {
+    const offset = (page - 1) * limit;
+    return tagRepository.listPopular(limit, offset);
+  },
+
+  async searchTags(query: string) {
+    return tagRepository.searchByName(query);
+  },
+
+  async addTagToVideo(videoID: bigint, tagNames: string[]) {
+    const results = [];
+    for (const name of tagNames) {
+      const tag = await tagRepository.createOrGet({ name });
+      await tagRepository.addTagToVideo(videoID, tag.id);
+      results.push(tag);
+    }
+    return results;
+  },
+
+  async getVideoTags(videoID: bigint) {
+    return tagRepository.getTagsForVideo(videoID);
+  },
+
+  async removeTagFromVideo(videoID: bigint, tagID: bigint) {
+    return tagRepository.removeTagFromVideo(videoID, tagID);
+  },
+};

@@ -10,7 +10,8 @@ function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
   const input = registerSchema.parse(req.body);
-  const result = await authService.register(input);
+  // Ensure 'role' is provided, or set a default value if needed
+  const result = await authService.register({ ...input, role: input.role ?? 'user' });
   res.status(201).json(result);
 });
 
