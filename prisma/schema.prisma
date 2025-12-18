@@ -84,7 +84,7 @@ model Video {
   visibility  String   @default("public")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now())
-  tags        String[] // TEXT[]
+  videoTags             VideoTag[]
 
   s3Bucket          String?
   s3KeyOriginal     String?
@@ -194,6 +194,29 @@ model VideoStats {
   updatedAt    DateTime @default(now())
 
   video Video @relation(fields: [vidID], references: [vidID], onDelete: Cascade)
+}
+
+model Tag {
+  id          BigInt   @id @default(autoincrement())
+  name        String   @unique @db.VarChar(50)
+  description String?  @db.VarChar(200)
+  color       String?  @db.VarChar(7) // hex color for UI, e.g. "#FF6B6B"
+  usageCount  Int      @default(0)    // how many videos use this tag
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  videos      VideoTag[] // relation to join table
+}
+
+model VideoTag {
+  videoID     BigInt
+  tagID       BigInt
+  assignedAt  DateTime @default(now())
+
+  video       Video @relation(fields: [videoID], references: [vidID], onDelete: Cascade)
+  tag         Tag   @relation(fields: [tagID],   references: [id],     onDelete: Cascade)
+
+  @@id([videoID, tagID])
 }
 
 model Reports {
