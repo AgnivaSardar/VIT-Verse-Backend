@@ -2,10 +2,12 @@
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
   provider = "prisma-client-js"
+  engineType = "library" 
 }
 
 model Users {
@@ -16,7 +18,7 @@ model Users {
   userPhone BigInt?
   role      String   @default("student")
   createdAt DateTime @default(now())
-  isActive  Boolean
+  isActive  Boolean @default(true)
 
   student   Student?
   teacher   Teacher?

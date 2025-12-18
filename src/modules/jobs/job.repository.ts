@@ -1,6 +1,6 @@
 // src/modules/jobs/job.repository.ts
 import { prisma } from '../../config/prisma';
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 export const jobRepository = {
   createTranscodeJob(payload: object) {

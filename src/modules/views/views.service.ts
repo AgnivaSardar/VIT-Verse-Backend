@@ -42,14 +42,17 @@ export async function deleteViewService(viewID: bigint): Promise<void> {
 }
 export async function listViewsService(page: number, limit: number): Promise<ViewListResponse> {
     const { views, totalViews } = await viewsRepo.listViews(page, limit);
-    const transformedViews = views.map(view => {
+    const transformedViews: ViewResponse[] = views.map((view: any): ViewResponse => {
         if (view.userID === null) {
             throw new AppError("View userID is null", 500);
         }
         return {
-            ...view,
-            userID: view.userID,
+            viewID: view.viewID,
+            vidID: view.vidID,
+            userID: view.userID as bigint,
+            watchedAt: view.watchedAt,
             watchTime: view.watchTime === null ? 0 : view.watchTime,
+            ipAddress: view.ipAddress === null ? "" : view.ipAddress,
             userAgent: view.userAgent === null ? "" : view.userAgent
         };
     });
