@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import * as videoStatsService from "./videostats.service";
+import { toJSON } from "../../common/utils";
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
     return (req: Request, res: Response, next: (err: any) => void) => {
@@ -10,14 +11,14 @@ function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
 export const getVideoStats = asyncHandler(async (req: Request, res: Response) => {
     const vidID = BigInt(req.params.vidID);
     const stats = await videoStatsService.getVideoStatsByVidID(vidID);
-    res.json(stats);
+    res.json(toJSON(stats));
 });
 
 export const listVideoStats = asyncHandler(async (req: Request, res: Response) => {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const result = await videoStatsService.listVideoStats(page, limit);
-    res.json(result);
+    res.json(toJSON(result));
 });
 
 export const incrementViewsCount = asyncHandler(async (req: Request, res: Response) => {

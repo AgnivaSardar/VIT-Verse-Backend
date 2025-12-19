@@ -1,0 +1,12 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "align-login-and-extract-token",
+			"type": "shell",
+			"command": "powershell -NoProfile -Command \"$file='test-all.ps1'; (Get-Content $file) -replace '\\{@\\s*name\\s*=\\s*\\\"Auth Login\\\";[^\\}]+\\}', '@{ name = \"Auth Login\"; method = \"POST\"; url = \"/api/auth/login\"; expect = 200; auth = $false; body = @{email=\"test@example.com\";password=\"Pass123!\"} }' | Set-Content $file; $c=Get-Content $file -Raw; $needle='        # If this is Auth Login and success, extract token'; if($c -notmatch [regex]::Escape($needle)){}; $c=$c -replace '        \\$response = Invoke-WebRequest @params\\r?\\n        \\$status\\s+=\\s+\\$response\\.StatusCode\\r?\\n\\r?\\n        # If this is Auth Login and success, extract token','        $response = Invoke-WebRequest @params`n        $status   = $response.StatusCode`n`n        # If this is Auth Register and success, extract token`n        if ($test.name -eq \"Auth Register\" -and ($status -eq 201 -or $status -eq 200)) {`n            try {`n                $json = $response.Content | ConvertFrom-Json`n                if ($json.token) {`n                    $token = $json.token`n                    Write-Host \" [Token: $($token.Substring(0, 20))...]\" -ForegroundColor Gray -NoNewline`n                }`n            } catch {}`n        }`n`n        # If this is Auth Login and success, extract token'; Set-Content $file $c; Write-Host 'Updated test-all.ps1' -ForegroundColor Green\"",
+			"args": [],
+			"isBackground": false
+		}
+	]
+}

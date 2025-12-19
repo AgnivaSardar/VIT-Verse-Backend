@@ -1,41 +1,50 @@
-import { Request,Response } from "express";
+import { Request, Response } from "express";
 import * as studentService from "./student.service";
 import { CreateStudentRequest, UpdateStudentRequest } from "./student.types";
+import { toJSON } from "../../common/utils";
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
-    return (req: Request, res: Response, next: (err: any) => void) => {
-        Promise.resolve(fn(req, res)).catch(next);
-    };
+  return (req: Request, res: Response, next: (err: any) => void) => {
+    Promise.resolve(fn(req, res)).catch(next);
+  };
 }
 
 export const getStudent = asyncHandler(async (req: Request, res: Response) => {
-    const userID = BigInt(req.params.userID);
-    const student = await studentService.getStudentByID(userID);
-    res.json(student);
+  const userID = BigInt(req.params.userID);
+  const student = await studentService.getStudentByID(userID);
+  // Ensure all BigInt fields are serialized as strings
+  res.json(toJSON(student));
 });
 
 export const createStudent = asyncHandler(async (req: Request, res: Response) => {
-    const input: CreateStudentRequest = req.body;
-    await studentService.createStudent(input);
-    res.status(201).json({ message: "Student created successfully" });
+  const input: CreateStudentRequest = req.body;
+  const created = await studentService.createStudent(input);
+  // If service returns created entity with BigInt fields, wrap it too
+  res.status(201).json(toJSON({
+    message: "Student created successfully",
+    student: created,
+  }));
 });
 
 export const updateStudent = asyncHandler(async (req: Request, res: Response) => {
-    const userID = BigInt(req.params.userID);
-    const input: UpdateStudentRequest = req.body;
-    await studentService.updateStudent(userID, input);
-    res.json({ message: "Student updated successfully" });
+  const userID = BigInt(req.params.userID);
+  const input: UpdateStudentRequest = req.body;
+  const updated = await studentService.updateStudent(userID, input);
+  res.json(toJSON({
+    message: "Student updated successfully",
+    student: updated,
+  }));
 });
 
 export const deleteStudent = asyncHandler(async (req: Request, res: Response) => {
-    const userID = BigInt(req.params.userID);
-    await studentService.deleteStudent(userID);
-    res.json({ message: "Student deleted successfully" });
+  const userID = BigInt(req.params.userID);
+  await studentService.deleteStudent(userID);
+  res.json({ message: "Student deleted successfully" });
 });
 
 export const StudentController = {
-    getStudent,
-    createStudent,
-    updateStudent,
-    deleteStudent,
+  getStudent,
+  createStudent,
+  updateStudent,
+  deleteStudent,
 };

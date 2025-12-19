@@ -1,9 +1,25 @@
 import { AppError, ValidationError } from "../../common/errors";
 import * as commentRepo from "./comment.repository";
+import { getIO } from "../realtime/socket.server";
+import { socketEvents } from "../realtime/socket.handlers";
 import { CreateCommentRequest, UpdateCommentRequest } from "./comment.types";
+import { userRepository } from "../users/user.repository";
 
 export async function createComment(data: CreateCommentRequest): Promise<void> {
-    await commentRepo.createComment(data);
+    const comment = await commentRepo.createComment(data);
+    
+    // Emit socket event to broadcast new comment
+    try {
+        const io = getIO();
+        const user = await userRepository.getUserByID(data.userID);
+        socketEvents.broadcastComment(io, data.vidID.toString(), {
+            commentID: comment.commID.toString(),
+            userName: user?.userName || "Unknown User",
+            text: data.description,
+        });
+    } catch (err) {
+        console.log('Socket or user fetch error on comment:', err);
+    }
 }
 
 export async function getCommentByID(commID: bigint) {

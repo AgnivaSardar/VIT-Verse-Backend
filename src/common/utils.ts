@@ -1,14 +1,8 @@
-// src/common/utils.ts - GLOBAL BigInt JSON FIX
-export const toJsonSafe = (obj: any): any => {
+// src/utils/utils.ts
+export function toJSON<T = any>(data: T): T {
   return JSON.parse(
-    JSON.stringify(obj, (key: string, value: any) => {
-      if (typeof value === 'bigint') {
-        return value.toString(); // Convert BigInt → string
-      }
-      return value;
-    })
+    JSON.stringify(data, (_key, value) =>
+      typeof value === 'bigint' ? value.toString() : value,
+    ),
   );
-};
-
-// Usage in ANY controller:
-// res.json(toJsonSafe(student));  ✅ No more BigInt errors!
+}

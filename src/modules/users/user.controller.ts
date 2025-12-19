@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import * as userService from "./user.service";
 import { CreateUserRequest, UpdateUserRequest } from "./user.types";
+import { toJSON } from "../../common/utils";
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
   return (req: Request, res: Response, next: (err: any) => void) => {
@@ -18,7 +19,7 @@ export const createUser = asyncHandler(async (req: Request, res: Response) => {
 export const getUser = asyncHandler(async (req: Request, res: Response) => {
   const userID = BigInt(req.params.userID);
   const user = await userService.getUserByID(userID);
-  res.json(user);
+  res.json(toJSON(user));
 });
 
 export const updateUser = asyncHandler(async (req: Request, res: Response) => {
@@ -39,7 +40,7 @@ export const listUsers = asyncHandler(async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
   const result = await userService.listUsers(page, limit);
-  res.json(result);
+  res.json(toJSON(result));
 }
 );
 

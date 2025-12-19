@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import * as CommentService from "./comment.service";
 import { CreateCommentRequest, UpdateCommentRequest } from "./comment.types";
+import { toJSON } from "../../common/utils";
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
     return (req: Request, res: Response, next: (err: any) => void) => {
@@ -18,7 +19,7 @@ export const createComment = asyncHandler(async (req: Request, res: Response) =>
 export const getComment = asyncHandler(async (req: Request, res: Response) => {
     const commID = BigInt(req.params.commID);
     const comment = await CommentService.getCommentByID(commID);
-    res.json(comment);
+    res.json(toJSON(comment));
 });
 
 export const updateComment = asyncHandler(async (req: Request, res: Response) => {

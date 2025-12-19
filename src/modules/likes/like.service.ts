@@ -1,5 +1,11 @@
 import { AppError } from '../../common/errors';
 import * as likeRepo from './like.repository';
+import { getIO } from "../realtime/socket.server";
+import { socketEvents } from "../realtime/socket.handlers";
+// Adjust the import based on the actual export from user.repository.ts
+import { userRepository } from "../users/user.repository";
+// If the export is named differently, for example 'UserRepository', use:
+// import { UserRepository } from "../users/user.repository";
 
 /**
  * Add a like to a video
@@ -17,6 +23,15 @@ export async function likeVideo(userID: bigint, vidID: bigint): Promise<void> {
         userID,
         vidID,
     });
+
+    // Emit socket event to broadcast new like
+    try {
+        const io = getIO();
+        const user = await userRepository.getUserByID(userID);
+        socketEvents.broadcastLike(io, vidID.toString(), user?.userName || "Unknown User");
+    } catch (err) {
+        console.log('Socket or user fetch error on like:', err);
+    }
 }
 
 /**

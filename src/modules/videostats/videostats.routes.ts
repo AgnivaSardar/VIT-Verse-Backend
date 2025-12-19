@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { VideoStatsController } from "./videostats.controller";
+import { requireAuth } from "../../middlewares/auth.middleware";
 
 const router = Router();
 const videoStatsController = VideoStatsController;
@@ -7,10 +8,10 @@ const videoStatsController = VideoStatsController;
 router.get("/:vidID", videoStatsController.getVideoStats);
 router.get("/", videoStatsController.listVideoStats);
 router.post("/:vidID/increment-views", videoStatsController.incrementViewsCount);
-router.post("/:vidID/increment-likes", videoStatsController.incrementLikesCount);
-router.post("/:vidID/decrement-likes", videoStatsController.decrementLikesCount);
-router.post("/:vidID/increment-comments", videoStatsController.incrementCommentsCount);
-router.post("/:vidID/decrement-comments", videoStatsController.decrementCommentsCount);
-router.post("/:vidID/increment-shares", videoStatsController.incrementSharesCount);
-router.post("/:vidID/decrement-shares", videoStatsController.decrementSharesCount);
+router.post("/:vidID/increment-likes", requireAuth, videoStatsController.incrementLikesCount);
+router.post("/:vidID/decrement-likes", requireAuth, videoStatsController.decrementLikesCount);
+router.post("/:vidID/increment-comments", requireAuth, videoStatsController.incrementCommentsCount);
+router.post("/:vidID/decrement-comments", requireAuth, videoStatsController.decrementCommentsCount);
+router.post("/:vidID/increment-shares", requireAuth, videoStatsController.incrementSharesCount);
+router.post("/:vidID/decrement-shares", requireAuth, videoStatsController.decrementSharesCount);
 export default router;

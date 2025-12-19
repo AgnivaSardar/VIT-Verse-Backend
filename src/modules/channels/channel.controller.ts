@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import * as channelService from "./channel.service";
 import { CreateChannelRequest, UpdateChannelRequest } from "./channel.types";
+import { toJSON } from "../../common/utils";
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
   return (req: Request, res: Response, next: (err: any) => void) => {
@@ -18,7 +19,7 @@ export const createChannel = asyncHandler(async (req: Request, res: Response) =>
 export const getChannel = asyncHandler(async (req: Request, res: Response) => {
   const channelID = BigInt(req.params.channelID);
   const channel = await channelService.getChannelByID(channelID);
-  res.json(channel);
+  res.json(toJSON(channel));
 });
 
 export const deleteChannel = asyncHandler(async (req: Request, res: Response) => {
@@ -42,7 +43,7 @@ export const listChannels = asyncHandler(async (req: Request, res: Response) => 
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
   const result = await channelService.listChannelsService(page, limit);
-  res.json(result);
+  res.json(toJSON(result));
 }
 );  
 

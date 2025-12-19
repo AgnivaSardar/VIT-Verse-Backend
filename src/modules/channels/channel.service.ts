@@ -61,3 +61,17 @@ export function unsubscribeFromChannelService(channelID: bigint, userID: bigint)
 export function getChannelByNameAndUserService(channelName: string, userID: bigint) {
     throw new Error('Function not implemented.');
 }
+
+export const channelService = {
+    createChannel,
+    getChannelByID,
+    deleteChannel,
+    createChannelService,
+    getChannelService,
+    deleteChannelService,
+    updateChannelService,
+    listChannelsService,
+    subscribeToChannelService,
+    unsubscribeFromChannelService,
+    getChannelByNameAndUserService,
+};

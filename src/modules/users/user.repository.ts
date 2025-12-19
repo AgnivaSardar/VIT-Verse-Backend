@@ -74,3 +74,14 @@ export async function activateUser(id: bigint) {
     data: { isActive: true },
   });
 }
+
+export const userRepository = {
+  getUserByID,
+  getUserByEmail,
+  createUser,
+  updateUser,
+  deleteUser,
+  listUsers,
+  deactivateUser,
+  activateUser,
+};

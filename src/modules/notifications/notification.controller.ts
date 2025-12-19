@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import * as notificationService from "./notification.service";
 import { UpdateNotificationRequest } from "./notification.types";
 import { ValidationError } from "../../common/errors";
+import { toJSON } from "../../common/utils";
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
     return (req: Request, res: Response, next: (err: any) => void) => {
@@ -12,7 +13,7 @@ function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
 export const getNotificationsByUserID = asyncHandler(async (req: Request, res: Response) => {
     const userID = BigInt(req.params.userID);
     const notifications = await notificationService.getNotificationsByUserID(userID);
-    res.json(notifications);
+    res.json(toJSON(notifications));
 }
 );
 

@@ -1,11 +1,12 @@
 import { Router } from "express";
 import { StudentController } from "./student.controller";
+import { requireAuth } from "../../middlewares/auth.middleware";
 
 const router = Router();
 const studentController = StudentController;
 
-router.post("/", studentController.createStudent);
+router.post("/", requireAuth, studentController.createStudent);
 router.get("/:userID", studentController.getStudent);
-router.put("/:userID", studentController.updateStudent);
-router.delete("/:userID", studentController.deleteStudent);
+router.put("/:userID", requireAuth, studentController.updateStudent);
+router.delete("/:userID", requireAuth, studentController.deleteStudent);
 export default router;

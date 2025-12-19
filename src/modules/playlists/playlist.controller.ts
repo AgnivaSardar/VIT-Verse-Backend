@@ -1,6 +1,7 @@
 import { Request,Response } from "express";
 import * as playlistService from "./playlist.repository";
 import { CreatePlaylistRequest, UpdatePlaylistRequest } from "./playlist.types";
+import { toJSON } from "../../common/utils";
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
     return (req: Request, res: Response, next: (err: any) => void) => {
@@ -17,7 +18,7 @@ export const createPlaylist = asyncHandler(async (req: Request, res: Response) =
 export const getPlaylist = asyncHandler(async (req: Request, res: Response) => {
     const playlistID = BigInt(req.params.playlistID);
     const playlist = await playlistService.getPlaylistByID(playlistID);
-    res.json(playlist);
+    res.json(toJSON(playlist));
 });
 
 export const updatePlaylist = asyncHandler(async (req: Request, res: Response) => {

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import * as likeService from "./like.service";
 import { CreateLikeRequest } from "./like.types";
+import { toJSON } from "../../common/utils";
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
     return (req: Request, res: Response, next: (err: any) => void) => {
@@ -23,14 +24,14 @@ export const unlikeVideo = asyncHandler(async (req: Request, res: Response) => {
 export const getLikesCount = asyncHandler(async (req: Request, res: Response) => {
     const vidID = BigInt(req.params.vidID);
     const count = await likeService.getLikesCount(vidID);
-    res.json({ vidID, count });
+    res.json(toJSON({ vidID, count }));
 });
 
 export const hasUserLikedVideo = asyncHandler(async (req: Request, res: Response) => {
     const userID = BigInt(req.params.userID);
     const vidID = BigInt(req.params.vidID);
     const hasLiked = await likeService.hasUserLikedVideo(userID, vidID);
-    res.json({ userID, vidID, hasLiked });
+    res.json(toJSON({ userID, vidID, hasLiked }));
 }
 );
 

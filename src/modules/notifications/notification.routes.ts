@@ -1,14 +1,15 @@
 import { Router } from "express";
 import { NotificationController } from "./notification.controller";
+import { requireAuth } from "../../middlewares/auth.middleware";
 
 const router = Router();
 const notificationController = NotificationController;
-router.get("/user/:userID", notificationController.getNotificationsByUserID);
-router.post("/:notifID/mark-as-read", notificationController.markNotificationAsRead);
-router.post("/", notificationController.createNotification);
-router.delete("/:notifID", notificationController.deleteNotification);
-router.delete("/user/:userID", notificationController.deleteNotificationsByUserID);
+router.get("/user/:userID", requireAuth, notificationController.getNotificationsByUserID);
+router.post("/:notifID/mark-as-read", requireAuth, notificationController.markNotificationAsRead);
+router.post("/", requireAuth, notificationController.createNotification);
+router.delete("/:notifID", requireAuth, notificationController.deleteNotification);
+router.delete("/user/:userID", requireAuth, notificationController.deleteNotificationsByUserID);
 router.get("/:notifID", notificationController.getNotificationByID);
-router.put("/:notifID", notificationController.updateNotification);
+router.put("/:notifID", requireAuth, notificationController.updateNotification);
 router.get("/", notificationController.listNotifications);
 export default router;

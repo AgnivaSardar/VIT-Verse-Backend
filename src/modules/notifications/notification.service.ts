@@ -1,5 +1,7 @@
 import { AppError } from '../../common/errors';
 import * as notificationRepo from './notification.repository';
+import { getIO } from '../realtime/socket.server';
+import { socketEvents } from '../realtime/socket.handlers';
 import { Notification } from './notification.types';
 
 export async function getNotificationsByUserID(userID: bigint): Promise<Notification[]> {
@@ -20,7 +22,20 @@ export async function createNotification(data: {
     entityID: bigint;
     message: string;
 }): Promise<void> {
-    await notificationRepo.createNotification(data);
+    const notification = await notificationRepo.createNotification(data);
+    
+    // Emit socket event to notify user in real-time
+    try {
+        const io = getIO();
+        socketEvents.notifyUser(io, data.userID.toString(), {
+            notifID: notification.notifID.toString(),
+            message: data.message,
+            type: data.type,
+        });
+    } catch (err) {
+        // Socket not initialized yet, continue gracefully
+        console.log('Socket.io not available for notification:', err);
+    }
 }
 
 export async function deleteNotification(notifID: bigint): Promise<void> {

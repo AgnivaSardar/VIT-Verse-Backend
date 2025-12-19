@@ -44,7 +44,7 @@ export const socketEvents = {
   /**
    * Emit a new notification to a specific user.
    */
-  notifyUser(io: VITVerseIO, userID: string, payload: { notifID: string; message: string }) {
+  notifyUser(io: VITVerseIO, userID: string, payload: { notifID: string; message: string; type: string }) {
     io.to(userRoom(userID)).emit('notification:new', payload);
   },
 
@@ -60,5 +60,33 @@ export const socketEvents = {
    */
   notifyVideoProcessed(io: VITVerseIO, userID: string, vidID: string) {
     io.to(userRoom(userID)).emit('video:processed', { vidID });
+  },
+
+  /**
+   * Notify user of new subscription confirmation.
+   */
+  notifySubscription(io: VITVerseIO, subscriberUserID: string, channelID: string, channelName: string) {
+    io.to(userRoom(subscriberUserID)).emit('subscription:new', { channelID, channelName });
+  },
+
+  /**
+   * Broadcast new comment to all connected clients watching a video.
+   */
+  broadcastComment(io: VITVerseIO, vidID: string, payload: { commentID: string; userName: string; text: string }) {
+    io.emit('comment:new', { vidID, ...payload });
+  },
+
+  /**
+   * Broadcast new like to all connected clients watching a video.
+   */
+  broadcastLike(io: VITVerseIO, vidID: string, userName: string) {
+    io.emit('like:new', { vidID, userName });
+  },
+
+  /**
+   * Notify all subscribers of channel updates (new video, info change, etc.).
+   */
+  broadcastChannelUpdate(io: VITVerseIO, channelID: string, message: string) {
+    io.emit('channel:update', { channelID, message });
   },
 };

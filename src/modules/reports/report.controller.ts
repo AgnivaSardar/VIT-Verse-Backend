@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import * as reportService from "./report.service";
 import { CreateReportRequest, UpdateReportRequest } from "./report.types";
+import { toJSON } from "../../common/utils";
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
     return (req: Request, res: Response, next: (err: any) => void) => {
@@ -16,7 +17,7 @@ export const createReport = asyncHandler(async (req: Request, res: Response) => 
 export const getReport = asyncHandler(async (req: Request, res: Response) => {
     const reportID = BigInt(req.params.reportID);
     const report = await reportService.getReportByID(reportID);
-    res.json(report);
+    res.json(toJSON(report));
 });
 
 export const deleteReport = asyncHandler(async (req: Request, res: Response) => {
