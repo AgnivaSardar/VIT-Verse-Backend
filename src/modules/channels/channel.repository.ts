@@ -51,3 +51,12 @@ export async function deleteChannel(id: bigint) {
   });
 }
 
+export async function listChannels(page: number, limit: number) {
+  const skip = (page - 1) * limit;
+  return prisma.channel.findMany({
+    skip,
+    take: limit,
+    orderBy: { createdAt: 'desc' },
+  });
+}
+

@@ -46,8 +46,8 @@ export function updateChannelService(channelID: bigint, input: UpdateChannelRequ
     throw new Error('Function not implemented.');
 }
 
-export function listChannelsService(page: number, limit: number) {
-    throw new Error('Function not implemented.');
+export async function listChannelsService(page: number, limit: number) {
+    return await channelRepo.listChannels(page, limit);
 }
 
 export function subscribeToChannelService(channelID: bigint, userID: bigint) {

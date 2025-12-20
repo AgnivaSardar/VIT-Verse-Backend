@@ -3,6 +3,7 @@ import type { Request, Response } from 'express';
 import { videoService } from './video.service';
 import type { CreateVideoInput } from './video.types';
 import { AppError } from '../../common/errors';
+import { toJSON } from '../../common/utils';
 
 // Extend Express Request interface to include 'user'
 declare global {
@@ -80,7 +81,7 @@ export const listVideosHandler = async (req: Request, res: Response) => {
       limit: limit ? Number(limit) : undefined,
       status: status as string,
     });
-    res.json(videos);
+    res.json(toJSON(videos));
   } catch (err) {
     console.error('List videos error:', err);
     res.status(500).json({ message: 'Internal server error' });
