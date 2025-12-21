@@ -20,6 +20,7 @@ export interface TranscodeJobPayload {
   vidID: string;
   filePath: string; // local or S3 key
   originalName: string;
+  storageType?: 'local' | 's3';
 }
 
 export interface VideoWithTags {

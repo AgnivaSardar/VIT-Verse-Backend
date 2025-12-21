@@ -5,6 +5,7 @@ import type { CreateVideoInput } from './video.types';
 import { AppError } from '../../common/errors';
 import { toJSON } from '../../common/utils';
 import { channelService } from '../channels/channel.service';
+import fs from 'fs';
 
 export const uploadVideoHandler = async (req: Request, res: Response) => {
   try {
@@ -31,24 +32,42 @@ export const uploadVideoHandler = async (req: Request, res: Response) => {
       userChannel.channelID,
     );
 
+    // For S3, read file buffer and pass it along
+    let fileBuffer: Buffer | undefined;
+    if (storageType === 's3' && file.path) {
+      fileBuffer = fs.readFileSync(file.path);
+    }
+
     const video = await videoService.createVideo(
       input,
       storageType === 'local' ? file.path : file.filename!,
       file.originalname,
       storageType,
       uploaderID,
+      fileBuffer,
+      file.mimetype,
+      file.size,
     );
+
+    // Clean up local temp file after S3 upload
+    if (storageType === 's3' && file.path) {
+      try {
+        fs.unlinkSync(file.path);
+      } catch (err) {
+        console.warn('Failed to delete temp file:', err);
+      }
+    }
 
     res.status(201).json({
       message: 'Video uploaded successfully. Processing in background...',
-      video,
+      video: toJSON(video),
     });
   } catch (err: any) {
     if (err instanceof AppError) {
       res.status(err.statusCode).json({ message: err.message });
     } else {
       console.error('Upload video error:', err);
-      res.status(500).json({ message: 'Internal server error' });
+      res.status(500).json({ message: err.message || 'Internal server error' });
     }
   }
 };
@@ -123,6 +142,32 @@ export const getMyVideosHandler = async (req: Request, res: Response) => {
       const message = err instanceof Error ? err.message : 'Failed to fetch your videos';
       console.error('🔴 Database error in getMyVideosHandler:', message, err);
       res.status(500).json({ message: 'Internal server error', error: message });
+    }
+  }
+};
+
+export const getVideoStreamUrlHandler = async (req: Request, res: Response) => {
+  try {
+    const vidID = BigInt(req.params.id);
+    const video = await videoService.getVideoById(vidID);
+    
+    if (!video) {
+      throw new AppError('Video not found', 404);
+    }
+
+    // Generate presigned URL for S3 videos
+    const streamUrl = await videoService.getVideoStreamUrl(video);
+    
+    res.json({ 
+      streamUrl,
+      expiresIn: 3600, // 1 hour
+    });
+  } catch (err: any) {
+    if (err instanceof AppError) {
+      res.status(err.statusCode).json({ message: err.message });
+    } else {
+      console.error('Get stream URL error:', err);
+      res.status(500).json({ message: 'Failed to generate stream URL' });
     }
   }
 };

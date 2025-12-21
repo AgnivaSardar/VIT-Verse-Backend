@@ -4,6 +4,7 @@ import { tagService } from '../tags/tag.service';
 import { jobRepository } from '../jobs/job.repository';
 import { getIO } from '../realtime/socket.server';
 import { socketEvents } from '../realtime/socket.handlers';
+import { uploadToS3, isS3Configured } from '../../config/s3';
 import type {
   CreateVideoInput,
   UpdateVideoInput,
@@ -11,6 +12,7 @@ import type {
   Visibility,
 } from './video.types';
 import type { Prisma } from '@prisma/client';
+import crypto from 'crypto';
 
 export const videoService = {
   async createVideo(
@@ -18,8 +20,52 @@ export const videoService = {
     filePath: string,
     fileName: string,
     storageType: 'local' | 's3',
-    uploaderID: bigint, // from req.user
+    uploaderID: bigint,
+    fileBuffer?: Buffer,
+    mimeType?: string,
+    fileSize?: number,
   ) {
+    let s3Key: string | null = null;
+    let s3Bucket: string | null = null;
+
+    // Upload to S3 if configured
+    if (storageType === 's3') {
+      if (!isS3Configured()) {
+        throw new Error('S3 is not properly configured. Please set AWS credentials.');
+      }
+      if (!fileBuffer) {
+        throw new Error('File buffer is required for S3 upload');
+      }
+
+      // Generate unique S3 key with folder structure
+      const timestamp = Date.now();
+      const randomHash = crypto.randomBytes(8).toString('hex');
+      const ext = fileName.split('.').pop();
+      s3Key = `videos/${uploaderID}/${timestamp}-${randomHash}.${ext}`;
+
+      try {
+        await uploadToS3({
+          key: s3Key,
+          body: fileBuffer,
+          metadata: {
+            originalName: fileName,
+            mimeType: mimeType || 'video/mp4',
+            size: fileSize || fileBuffer.length,
+            uploadedBy: uploaderID.toString(),
+            title: input.title,
+            description: input.description || '',
+          },
+          contentType: mimeType || 'video/mp4',
+          isPublic: input.visibility === 'public',
+        });
+        s3Bucket = process.env.S3_BUCKET_NAME || null;
+        console.log(`✅ Video uploaded to S3: ${s3Key}`);
+      } catch (error: any) {
+        console.error('❌ S3 upload failed:', error);
+        throw new Error(`S3 upload failed: ${error.message}`);
+      }
+    }
+
     const video = await videoRepository.create({
       channel: { connect: { channelID: input.channelID } },
       title: input.title,
@@ -32,8 +78,8 @@ export const videoService = {
             s3KeyOriginal: filePath,
           }
         : {
-            s3Bucket: process.env.S3_BUCKET_NAME ?? null,
-            s3KeyOriginal: filePath,
+            s3Bucket,
+            s3KeyOriginal: s3Key,
           }),
     });
 
@@ -45,8 +91,9 @@ export const videoService = {
     // Enqueue transcode job
     const jobPayload: TranscodeJobPayload = {
       vidID: video.vidID.toString(),
-      filePath,
+      filePath: storageType === 's3' ? s3Key! : filePath,
       originalName: fileName,
+      storageType,
     };
     await jobRepository.createTranscodeJob(jobPayload);
 
@@ -113,5 +160,16 @@ export const videoService = {
       tags,
       playlistID: body.playlistID ? BigInt(body.playlistID) : undefined,
     };
+  },
+
+  async getVideoStreamUrl(video: any): Promise<string> {
+    // If video is stored in S3, generate presigned URL
+    if (video.s3Bucket && video.s3KeyOriginal) {
+      const { getSignedDownloadUrl } = await import('../../config/s3');
+      return getSignedDownloadUrl(video.s3KeyOriginal, 3600); // 1 hour expiry
+    }
+    
+    // For local storage, return direct path (handled by static file server)
+    return video.s3KeyOriginal || '';
   },
 };
