@@ -9,6 +9,7 @@ import cookieParser from 'cookie-parser';
 
 // === ALL YOUR MODULE ROUTES ===
 import authRoutes from './modules/auth/auth.routes';
+import adminRoutes from './modules/admin/admin.routes';
 import channelRoutes from './modules/channels/channel.routes';
 import commentRoutes from './modules/comments/comment.routes';
 import imageRoutes from './modules/images/image.routes';
@@ -35,8 +36,12 @@ const app: Application = express();
 app.use(helmet({
   contentSecurityPolicy: false,
 }));
+
+const allowedOrigins = process.env.CLIENT_ORIGIN?.split(',') || ['http://localhost:3000', 'http://localhost:5173'];
+console.log('🔐 CORS allowed origins:', allowedOrigins);
+
 app.use(cors({
-  origin: process.env.CLIENT_ORIGIN?.split(',') || ['http://localhost:3000'],
+  origin: allowedOrigins,
   credentials: true,
 }));
 
@@ -70,6 +75,14 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('combined'));
 }
 
+// === REQUEST LOGGER (Development) ===
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/api', (req: Request, _res: Response, next: NextFunction) => {
+    console.log(`📥 [${req.method}] ${req.originalUrl} from ${req.headers.origin || 'unknown'}`);
+    next();
+  });
+}
+
 // === HEALTH CHECK ===
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({ 
@@ -79,8 +92,20 @@ app.get('/health', (req: Request, res: Response) => {
   });
 });
 
+// === CONNECTION TEST ENDPOINT ===
+app.get('/api/test-connection', (req: Request, res: Response) => {
+  console.log('✅ Frontend connected successfully to backend!');
+  res.status(200).json({ 
+    message: 'Connection successful!',
+    environment: process.env.NODE_ENV || 'development',
+    storageType: process.env.STORAGE_TYPE || 'local',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // === MOUNT ALL MODULES ===
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/channels', channelRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/images', imageRoutes);

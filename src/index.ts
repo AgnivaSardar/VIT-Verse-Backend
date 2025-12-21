@@ -69,7 +69,11 @@ async function bootstrap() {
     httpServer.listen(PORT, HOST, () => {
       console.log(`✅ Server: http://${HOST}:${PORT}`);
       console.log(`🏥 Health: http://${HOST}:${PORT}/health`);
+      console.log(`🔗 Connection Test: http://${HOST}:${PORT}/api/test-connection`);
+      console.log(`📦 Storage Mode: ${process.env.STORAGE_TYPE || 'local'} (${process.env.NODE_ENV === 'production' ? 'production' : 'development'})`);
+      console.log(`🗄️  Database: ${process.env.DATABASE_URL?.split('@')[1]?.split('?')[0] || 'local PostgreSQL'}`);
       console.log(`📱 Modules: auth, channels, videos, tags, jobs, notifications, & more`);
+      console.log(`🚀 Ready to accept connections from frontend!`);
     });
 
     // Graceful shutdown (same as before)

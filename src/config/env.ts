@@ -11,12 +11,12 @@ if (missingEnvVars.length > 0 && process.env.NODE_ENV === 'production') {
 
 export const config = {
   port: process.env.PORT || 5000,
-  jwtSecret: process.env.JWT_SECRET || 'dev-secret-change-in-production',
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  jwtSecret: (process.env.JWT_SECRET || 'dev-secret-change-in-production') as string,
+  jwtExpiresIn: (process.env.JWT_EXPIRES_IN || '7d') as string,
   dbUrl: process.env.DATABASE_URL || 'postgresql://postgres@localhost:5432/vit_verse_db',
   
-  // Storage
-  storageType: (process.env.STORAGE_TYPE || 'local') as 'local' | 's3',
+  // Storage - defaults to 'local' in development, requires explicit 's3' in production
+  storageType: (process.env.STORAGE_TYPE || (process.env.NODE_ENV === 'production' ? 's3' : 'local')) as 'local' | 's3',
   maxVideoSizeMB: Number(process.env.MAX_VIDEO_SIZE_MB) || 500,
   
   // AWS S3

@@ -3,3 +3,6 @@ node_modules
 .env
 
 /generated/prisma
+
+# Super Admin Credentials (NEVER COMMIT THIS)
+SUPER_ADMIN_CREDENTIALS.txt
