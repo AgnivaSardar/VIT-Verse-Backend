@@ -9,11 +9,12 @@ import {
   getVideoTagsHandler,
 } from './tag.controller';
 import { requireAuth } from '../../middlewares/auth.middleware';
+import { cacheResponse } from '../../common/cache';
 
 const router = Router();
 
 router.post('/', requireAuth, createTagHandler);
-router.get('/popular', listPopularTagsHandler);
+router.get('/popular', cacheResponse(60, () => 'tags:popular'), listPopularTagsHandler);
 router.get('/search', searchTagsHandler);
 router.get('/:id', getTagHandler);
 

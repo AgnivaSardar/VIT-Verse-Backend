@@ -83,7 +83,13 @@ export const listVideosHandler = async (req: Request, res: Response) => {
     res.json(toJSON(videos));
   } catch (err) {
     console.error('List videos error:', err);
-    res.status(500).json({ message: 'Internal server error' });
+    if (err instanceof AppError) {
+      res.status(err.statusCode).json({ message: err.message });
+    } else {
+      const message = err instanceof Error ? err.message : 'Failed to list videos';
+      console.error('🔴 Database error in listVideosHandler:', message, err);
+      res.status(500).json({ message: 'Internal server error', error: message });
+    }
   }
 };
 
@@ -111,6 +117,12 @@ export const getMyVideosHandler = async (req: Request, res: Response) => {
     res.json(videos);
   } catch (err) {
     console.error('Get my videos error:', err);
-    res.status(500).json({ message: 'Internal server error' });
+    if (err instanceof AppError) {
+      res.status(err.statusCode).json({ message: err.message });
+    } else {
+      const message = err instanceof Error ? err.message : 'Failed to fetch your videos';
+      console.error('🔴 Database error in getMyVideosHandler:', message, err);
+      res.status(500).json({ message: 'Internal server error', error: message });
+    }
   }
 };

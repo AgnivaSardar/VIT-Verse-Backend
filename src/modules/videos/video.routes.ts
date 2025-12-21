@@ -11,6 +11,7 @@ import {
   getMyVideosHandler,
 } from './video.controller';
 import { requireAuth } from '../../middlewares/auth.middleware';
+import { cacheResponse } from '../../common/cache';
 
 const router = Router();
 
@@ -44,9 +45,9 @@ const upload = multer({
 
 // Routes
 router.post('/upload', requireAuth, upload.single('video'), uploadVideoHandler);
-router.get('/:id', getVideoHandler);
-router.get('/', listVideosHandler);
-router.patch('/:id', requireAuth, updateVideoHandler);
 router.get('/me', requireAuth, getMyVideosHandler);
+router.get('/', cacheResponse(30, (req) => `videos:list:${JSON.stringify(req.query)}`), listVideosHandler);
+router.get('/:id', getVideoHandler);
+router.patch('/:id', requireAuth, updateVideoHandler);
 
 export default router;

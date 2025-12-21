@@ -12,11 +12,14 @@ const globalForPrisma = globalThis as unknown as PrismaSingleton & {
 let prisma: PrismaClient;
 
 if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient();
+  prisma = new PrismaClient({
+    errorFormat: 'pretty',
+  });
 } else {
   if (!globalForPrisma.prismaClient) {
     globalForPrisma.prismaClient = new PrismaClient({
-      log: ['warn', 'error']
+      log: ['warn', 'error'],
+      errorFormat: 'pretty',
     });
   }
   prisma = globalForPrisma.prismaClient;

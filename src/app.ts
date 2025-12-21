@@ -47,12 +47,17 @@ app.use(cookieParser());
 // === RATE LIMITING ===
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'development' ? 1000 : 100, // Higher limit for dev/testing
+  max: process.env.NODE_ENV === 'development' ? 10000 : 100, // Very high for dev/testing
   message: { error: 'Too many requests' },
   standardHeaders: true,
   legacyHeaders: false,
-  // Bypass for automated tests when header is present
-  skip: (req) => req.headers['x-bypass-rate-limit'] === '1',
+  // Bypass for local/dev and explicit header
+  skip: (req) => {
+    const bypassHeader = req.headers['x-bypass-rate-limit'] === '1';
+    const isLocal = req.ip === '::1' || req.ip === '127.0.0.1' || req.hostname === 'localhost';
+    const isDev = process.env.NODE_ENV === 'development';
+    return bypassHeader || isLocal || isDev;
+  },
 });
 app.use('/api/', limiter);
 

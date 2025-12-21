@@ -19,6 +19,34 @@ const PORT = Number(process.env.PORT) || 4000;
 const HOST = process.env.HOST || '0.0.0.0';
 
 let httpServer: http.Server;
+// Monitor database connection health
+async function checkDatabaseHealth() {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return true;
+  } catch (error) {
+    console.error('🔴 Database health check failed:', error);
+    return false;
+  }
+}
+
+// Periodically check and log connection pool status
+function monitorConnectionPool() {
+  setInterval(async () => {
+    const isHealthy = await checkDatabaseHealth();
+    if (!isHealthy) {
+      console.error('⚠️  Database connection unhealthy! Attempting recovery...');
+      try {
+        await prisma.$disconnect();
+        console.log('🔄 Disconnected from database');
+        // Reconnection will happen on next query due to Prisma's auto-reconnect
+      } catch (err) {
+        console.error('Failed to disconnect:', err);
+      }
+    }
+  }, 30000); // Check every 30 seconds
+}
+
 
 async function bootstrap() {
   try {
@@ -30,6 +58,9 @@ async function bootstrap() {
 
     await prisma.$connect();  // ← ADD THIS
     console.log('✅ Prisma ready');
+
+  // Start connection pool monitoring
+  monitorConnectionPool();
 
     httpServer = http.createServer(app);
     const io = initSocketIO(httpServer);
@@ -44,6 +75,7 @@ async function bootstrap() {
     // Graceful shutdown (same as before)
     process.on('SIGINT', () => {
       console.log('\n🛑 Graceful shutdown...');
+        prisma.$disconnect().catch(console.error);
       httpServer.close(() => process.exit(0));
     });
 
