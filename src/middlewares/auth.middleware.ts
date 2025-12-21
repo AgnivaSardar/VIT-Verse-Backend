@@ -5,8 +5,8 @@ import { config } from '../config/env';
 import { AuthError } from '../common/errors';
 
 export interface AuthUser {
-  id: string;           // matches UserPayload.id
-  role?: string;        // CHANGED: optional to match UserPayload.role
+  id: string | number;  // can be string or number from JWT
+  role?: string;        // optional to match UserPayload.role
 }
 
 export interface AuthRequest extends Request {

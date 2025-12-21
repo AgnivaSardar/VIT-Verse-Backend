@@ -7,6 +7,7 @@ export interface CreateVideoInput {
   description?: string;
   visibility?: Visibility;
   tags?: string[]; // comma-separated or array
+  playlistID?: bigint; // optional playlist assignment
 }
 
 export interface UpdateVideoInput {

@@ -4,16 +4,7 @@ import { videoService } from './video.service';
 import type { CreateVideoInput } from './video.types';
 import { AppError } from '../../common/errors';
 import { toJSON } from '../../common/utils';
-
-// Extend Express Request interface to include 'user'
-declare global {
-  namespace Express {
-    // Remove local User interface and align Request.user type with global UserPayload
-    interface Request {
-      user?: UserPayload;
-    }
-  }
-}
+import { channelService } from '../channels/channel.service';
 
 export const uploadVideoHandler = async (req: Request, res: Response) => {
   try {
@@ -22,7 +13,14 @@ export const uploadVideoHandler = async (req: Request, res: Response) => {
       throw new AppError('No video file uploaded', 400);
     }
 
-    const uploaderID = BigInt(req.user!.id);
+    const uploaderID = BigInt(String(req.user!.id));
+    
+    // Check if user has a channel
+    const userChannel = await channelService.getUserChannel(uploaderID);
+    if (!userChannel) {
+      throw new AppError('You must create a channel before uploading videos', 403);
+    }
+
     const storageType: 'local' | 's3' =
       process.env.STORAGE_TYPE === 's3' ? 's3' : 'local';
 
@@ -30,6 +28,7 @@ export const uploadVideoHandler = async (req: Request, res: Response) => {
       req.body,
       storageType === 'local' ? file.path : file.filename!,
       file.originalname,
+      userChannel.channelID,
     );
 
     const video = await videoService.createVideo(
@@ -102,7 +101,7 @@ export const updateVideoHandler = async (req: Request, res: Response) => {
 
 export const getMyVideosHandler = async (req: Request, res: Response) => {
   try {
-    const userID = BigInt(req.user!.id);
+    const userID = BigInt(String(req.user!.id));
     const { page = '1', limit = '20' } = req.query;
     const videos = await videoService.getMyVideos(
       userID,

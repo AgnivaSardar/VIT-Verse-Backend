@@ -12,6 +12,12 @@ export async function getChannelByNameAndUser(channelName: string, userID: bigin
   });
 }
 
+export async function getChannelByUserID(userID: bigint) {
+  return prisma.channel.findFirst({
+    where: { userID: userID },
+  });
+}
+
 export async function createChannel(data: {
   userID: bigint;
   channelName: string;

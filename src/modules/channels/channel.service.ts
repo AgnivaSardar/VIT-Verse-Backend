@@ -3,6 +3,11 @@ import * as channelRepo from './channel.repository';
 import { CreateChannelRequest, UpdateChannelRequest } from './channel.types';
 
 export async function createChannel(data: CreateChannelRequest): Promise<void> {
+    // Enforce single channel per user
+    const userChannel = await channelRepo.getChannelByUserID(data.userID);
+    if (userChannel) {
+        throw new ValidationError('User already has a channel');
+    }
     // Validate unique channel name for the user
     const existingChannel = await channelRepo.getChannelByNameAndUser(data.channelName, data.userID);
     if (existingChannel) {
@@ -50,6 +55,10 @@ export async function listChannelsService(page: number, limit: number) {
     return await channelRepo.listChannels(page, limit);
 }
 
+export async function getUserChannel(userID: bigint) {
+    return await channelRepo.getChannelByUserID(userID);
+}
+
 export function subscribeToChannelService(channelID: bigint, userID: bigint) {
     throw new Error('Function not implemented.');
 }
@@ -71,6 +80,7 @@ export const channelService = {
     deleteChannelService,
     updateChannelService,
     listChannelsService,
+    getUserChannel,
     subscribeToChannelService,
     unsubscribeFromChannelService,
     getChannelByNameAndUserService,

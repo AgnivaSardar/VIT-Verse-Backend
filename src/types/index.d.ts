@@ -5,7 +5,7 @@ import type * as multer from 'multer';
 declare global {
   namespace Express {
     interface UserPayload {
-      id: string;
+      id: string | number;
       role?: string;  // optional - matches your user without role
     }
 

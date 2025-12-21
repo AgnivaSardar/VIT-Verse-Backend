@@ -95,11 +95,11 @@ export const videoService = {
     body: any,
     filePath: string,
     fileName: string,
+    channelID: bigint,
   ): Promise<CreateVideoInput> {
-    const channelID = BigInt(body.channelID);
     const tags = body.tags
       ? typeof body.tags === 'string'
-        ? body.tags.split(',').map((t: string) => t.trim())
+        ? JSON.parse(body.tags)
         : Array.isArray(body.tags)
         ? body.tags
         : []
@@ -111,6 +111,7 @@ export const videoService = {
       description: body.description || undefined,
       visibility: (['public', 'private', 'unlisted'].includes(body.visibility) ? body.visibility : 'public') as Visibility,
       tags,
+      playlistID: body.playlistID ? BigInt(body.playlistID) : undefined,
     };
   },
 };

@@ -10,7 +10,11 @@ function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
 }
 
 export const createChannel = asyncHandler(async (req: Request, res: Response) => {
-  const input: CreateChannelRequest = req.body;
+  const userID = BigInt(String(req.user!.id));
+  const input: CreateChannelRequest = {
+    ...req.body,
+    userID,
+  };
   await channelService.createChannel(input);
   res.status(201).json({ message: "Channel created successfully" });
 }
@@ -72,6 +76,16 @@ export const getChannelByNameAndUser = asyncHandler(async (req: Request, res: Re
 }
 );
 
+export const getMyChannel = asyncHandler(async (req: Request, res: Response) => {
+  const userID = BigInt(String(req.user!.id));
+  const channel = await channelService.getUserChannel(userID);
+  if (!channel) {
+    res.status(404).json({ message: "Channel not found" });
+    return;
+  }
+  res.json(toJSON(channel));
+});
+
 export const ChannelController = {
   createChannel,
   getChannel,
@@ -81,4 +95,5 @@ export const ChannelController = {
   subscribeToChannel,
   unsubscribeFromChannel,
   getChannelByNameAndUser,
+  getMyChannel,
 };
