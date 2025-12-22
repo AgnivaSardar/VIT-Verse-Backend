@@ -2,7 +2,7 @@ import { AppError } from "../../common/errors";
 import * as subscriptionRepo from "./subscription.repository";
 import { getIO } from "../realtime/socket.server";
 import { socketEvents } from "../realtime/socket.handlers";
-import { chan } from "../channels/channel.service";
+import * as channelService from "../channels/channel.service";
 
 export async function subscribe(channelID: bigint, userID: bigint) {
     // Check if the subscription already exists

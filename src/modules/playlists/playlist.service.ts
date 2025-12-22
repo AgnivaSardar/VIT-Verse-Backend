@@ -14,6 +14,10 @@ export async function getPlaylistByID(playlistID: bigint) {
     return playlist;
 }
 
+export async function getPlaylistsByUserID(userID: bigint) {
+  return await playlistRepo.getPlaylistsByUserID(userID);
+}
+
 export async function updatePlaylist(playlistID: bigint, data: UpdatePlaylistRequest): Promise<void> {
   const playlist = await playlistRepo.getPlaylistByID(playlistID);
     if (!playlist) {
@@ -28,6 +32,18 @@ export async function deletePlaylist(playlistID: bigint): Promise<void> {
         throw new AppError("Playlist not found", 404);
     }
     await playlistRepo.deletePlaylist(playlistID);
+}
+
+export async function addVideoToPlaylist(playlistID: bigint, videoID: bigint) {
+  const playlist = await playlistRepo.getPlaylistByID(playlistID);
+  if (!playlist) {
+    throw new AppError("Playlist not found", 404);
+  }
+  return await playlistRepo.addVideoToPlaylist(playlistID, videoID);
+}
+
+export async function removeVideoFromPlaylist(playlistVideoID: bigint) {
+  return await playlistRepo.removeVideoFromPlaylist(playlistVideoID);
 }
 
 export function createPlaylistService(input: CreatePlaylistRequest) {

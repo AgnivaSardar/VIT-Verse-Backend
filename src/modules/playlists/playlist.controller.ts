@@ -2,6 +2,7 @@ import { Request,Response } from "express";
 import * as playlistService from "./playlist.repository";
 import { CreatePlaylistRequest, UpdatePlaylistRequest } from "./playlist.types";
 import { toJSON } from "../../common/utils";
+import { AuthRequest } from "../../middlewares/auth.middleware";
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
     return (req: Request, res: Response, next: (err: any) => void) => {
@@ -9,16 +10,34 @@ function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
     };
 }
 
-export const createPlaylist = asyncHandler(async (req: Request, res: Response) => {
-    const input: CreatePlaylistRequest = req.body;
-    await playlistService.createPlaylist(input);
-    res.status(201).json({ message: "Playlist created successfully" });
+export const createPlaylist = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const { name, description, isPublic, isPremium } = req.body;
+    const userID = BigInt(req.user!.id);
+    const playlist = await playlistService.createPlaylist({
+        userID,
+        name,
+        description,
+        isPublic,
+        isPremium,
+    });
+    res.status(201).json({ data: toJSON(playlist), message: "Playlist created successfully" });
 });
 
 export const getPlaylist = asyncHandler(async (req: Request, res: Response) => {
     const playlistID = BigInt(req.params.playlistID);
     const playlist = await playlistService.getPlaylistByID(playlistID);
     res.json(toJSON(playlist));
+});
+
+export const getMyPlaylists = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const userID = BigInt(req.user!.id);
+    const playlists = await playlistService.getPlaylistsByUserID(userID);
+    res.json(toJSON(playlists));
+});
+
+export const getAllPublicPlaylists = asyncHandler(async (req: Request, res: Response) => {
+    const playlists = await playlistService.getAllPublicPlaylists();
+    res.json(toJSON(playlists));
 });
 
 export const updatePlaylist = asyncHandler(async (req: Request, res: Response) => {
@@ -34,9 +53,32 @@ export const deletePlaylist = asyncHandler(async (req: Request, res: Response) =
     res.json({ message: "Playlist deleted successfully" });
 });
 
+export const addVideoToPlaylist = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const playlistID = BigInt(req.params.playlistID);
+    const { videoID } = req.body;
+    
+    if (!videoID) {
+        res.status(400).json({ message: "videoID is required" });
+        return;
+    }
+    
+    await playlistService.addVideoToPlaylist(playlistID, BigInt(videoID));
+    res.status(201).json({ message: "Video added to playlist" });
+});
+
+export const removeVideoFromPlaylist = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const playlistVideoID = BigInt(req.params.playlistVideoID);
+    await playlistService.removeVideoFromPlaylist(playlistVideoID);
+    res.json({ message: "Video removed from playlist" });
+});
+
 export const PlaylistController = {
     createPlaylist,
     getPlaylist,
+    getMyPlaylists,
+    getAllPublicPlaylists,
     updatePlaylist,
     deletePlaylist,
+    addVideoToPlaylist,
+    removeVideoFromPlaylist,
 };

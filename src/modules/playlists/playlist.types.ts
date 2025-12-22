@@ -9,7 +9,7 @@ export interface Playlist {
     updatedAt: Date;
 }
 
-export type CreatePlaylistRequest = Omit<Playlist, 'pID' | 'createdAt' | 'updatedAt'>;
+export type CreatePlaylistRequest = Omit<Playlist, 'pID' | 'userID' | 'createdAt' | 'updatedAt'>;
 export type UpdatePlaylistRequest = Partial<Omit<Playlist, 'pID' | 'userID' | 'createdAt' | 'updatedAt'>>;
 
 export type PlaylistResponse = Playlist;

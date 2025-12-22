@@ -153,3 +153,26 @@ export async function register(input: { name: string; email: string; password: s
 export async function login(input: { email: string; password: string }) {
   return loginUser({ email: input.email, password: input.password });
 }
+
+// ✅ NEW: Change password with new hashed password
+export async function changePassword(email: string, newPassword: string) {
+  // Check if user exists
+  const user = await prisma.users.findUnique({
+    where: { userEmail: email },
+  });
+
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  // Hash new password
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+  // Update password
+  await prisma.users.update({
+    where: { userEmail: email },
+    data: { userPassword: hashedPassword },
+  });
+
+  return { message: 'Password changed successfully' };
+}

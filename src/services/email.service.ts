@@ -64,6 +64,66 @@ export const emailService = {
   },
 
   /**
+   * Send OTP email for password change
+   */
+  async sendPasswordChangeOTP(email: string, name: string): Promise<void> {
+    const otp = this.generateOTP();
+    this.storeOTP(email, otp);
+
+    const msg = {
+      to: email,
+      from: { email: FROM_EMAIL, name: FROM_NAME },
+      subject: 'VIT-Verse Password Change Verification',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #dc2626, #ef4444); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .otp { font-size: 32px; font-weight: bold; color: #dc2626; text-align: center; padding: 20px; background: white; border-radius: 8px; margin: 20px 0; letter-spacing: 8px; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+            .warning { color: #e74c3c; font-size: 14px; margin-top: 15px; background: #fee; padding: 15px; border-radius: 5px; border-left: 4px solid #dc2626; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🔐 VIT-Verse</h1>
+              <p>Password Change Request</p>
+            </div>
+            <div class="content">
+              <p>Hello ${name},</p>
+              <p>We received a request to change your password. Please use the following OTP to verify this action:</p>
+              <div class="otp">${otp}</div>
+              <p><strong>This OTP is valid for 5 minutes.</strong></p>
+              <div class="warning">
+                <strong>⚠️ Security Notice:</strong><br>
+                If you did not request this password change, please ignore this email and ensure your account is secure.
+              </div>
+            </div>
+            <div class="footer">
+              <p>This is an automated message from VIT-Verse. Please do not reply to this email.</p>
+              <p>&copy; ${new Date().getFullYear()} VIT-Verse. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    };
+
+    try {
+      await sgMail.send(msg);
+      console.log(`✅ Password change OTP sent to ${email}`);
+    } catch (error) {
+      console.error('❌ Failed to send password change OTP:', error);
+      throw new Error('Failed to send OTP email');
+    }
+  },
+
+  /**
    * Send OTP email
    */
   async sendOTP(email: string, name: string): Promise<void> {
