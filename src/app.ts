@@ -98,7 +98,7 @@ app.use(express.json({ limit: '50mb' })); // larger for video metadata
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // === HTTP PARAMETER POLLUTION PROTECTION ===
-app.use(hpp());
+app.use(hpp({}) as any);
 
 // === OPTIONAL: HMAC SIGNED REQUESTS ===
 if (process.env.REQUIRE_API_SIGNING === 'true') {
