@@ -12,6 +12,8 @@ import crypto from 'crypto';
 const REGION = process.env.AWS_REGION || 'ap-south-1';
 const BUCKET = process.env.S3_BUCKET_NAME!;
 const MAX_FILE_SIZE = (Number(process.env.MAX_VIDEO_SIZE_MB) || 500) * 1024 * 1024;
+const CLOUDFRONT_URL = process.env.AWS_CLOUDFRONT_URL;
+const S3_PUBLIC_URL = process.env.S3_PUBLIC_URL;
 
 if (!BUCKET) {
   console.warn('⚠️  S3_BUCKET_NAME not configured. S3 uploads will fail.');
@@ -24,6 +26,24 @@ export const s3Client = new S3Client({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
   },
 });
+
+/**
+ * Get the public URL for an S3 object
+ * Prefers CloudFront CDN if configured, falls back to S3 direct URL
+ */
+export function getS3PublicUrl(key: string): string {
+  if (CLOUDFRONT_URL) {
+    return `${CLOUDFRONT_URL}/${key}`;
+  }
+  if (S3_PUBLIC_URL) {
+    return `${S3_PUBLIC_URL}/${key}`;
+  }
+  return `https://${BUCKET}.s3.${REGION}.amazonaws.com/${key}`;
+}
+
+export function isS3Configured(): boolean {
+  return !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY && BUCKET);
+}
 
 export interface UploadMetadata {
   originalName: string;
@@ -81,13 +101,14 @@ export async function uploadToS3(options: UploadToS3Options): Promise<string> {
     },
     // Security headers
     CacheControl: 'max-age=31536000', // 1 year cache
-    // ACL for public or private access
-    ...(isPublic ? { ACL: 'public-read' } : {}),
+    // Note: ACL removed - bucket uses bucket policy for public access instead
   });
 
   try {
     await s3Client.send(cmd);
-    return `s3://${BUCKET}/${key}`;
+    console.log(`✅ Uploaded to S3: ${key}`);
+    // Return public URL (CloudFront if available)
+    return getS3PublicUrl(key);
   } catch (error: any) {
     console.error('🔴 S3 Upload Error:', error);
     throw new Error(`Failed to upload to S3: ${error.message}`);
@@ -183,8 +204,29 @@ export async function getS3Metadata(key: string): Promise<any> {
 }
 
 /**
- * Check if S3 is properly configured
+ * Download file from S3 to a local buffer
  */
-export function isS3Configured(): boolean {
-  return !!(BUCKET && process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY);
+export async function downloadFromS3(key: string): Promise<Buffer> {
+  const cmd = new GetObjectCommand({
+    Bucket: BUCKET,
+    Key: key,
+  });
+  
+  try {
+    const response = await s3Client.send(cmd);
+    const stream = response.Body;
+    if (!stream) {
+      throw new Error('No response body from S3');
+    }
+    
+    // Convert stream to buffer
+    const chunks: Buffer[] = [];
+    for await (const chunk of stream as any) {
+      chunks.push(Buffer.from(chunk));
+    }
+    return Buffer.concat(chunks);
+  } catch (error: any) {
+    console.error('🔴 S3 Download Error:', error);
+    throw new Error(`Failed to download from S3: ${error.message}`);
+  }
 }

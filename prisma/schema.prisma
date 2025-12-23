@@ -57,6 +57,7 @@ model Channel {
   channelName        String
   channelDescription  String
   channelType        String
+  channelImage       String?
   channelSubscribers BigInt   @default(0)
   isPremium          Boolean  @default(false)
   isPresent           Boolean @default(true)

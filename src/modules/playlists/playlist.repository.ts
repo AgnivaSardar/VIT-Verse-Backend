@@ -57,9 +57,23 @@ export async function getPlaylistsByUserID(userID: bigint) {
     where: { userID },
     include: {
       videos: {
-        select: {
-          pvID: true,
+        include: {
+          video: {
+            select: {
+              vidID: true,
+              title: true,
+              createdAt: true,
+              cloudflarePlaybackURL: true,
+              images: {
+                select: { imgURL: true },
+                where: { isPrimary: true },
+                take: 1,
+              },
+            },
+          },
         },
+        orderBy: { position: 'asc' },
+        take: 1,
       },
       user: {
         select: {

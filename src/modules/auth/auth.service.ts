@@ -26,9 +26,23 @@ export interface AuthResponse {
 
 // ✅ UPDATED: registerUser now sends OTP and does NOT return token until verified
 export async function registerUser(data: RegisterRequest): Promise<{ message: string; userId: string }> {
+  // Email uniqueness
   const existingUser = await authRepo.getUserByEmail(data.email);
   if (existingUser) {
     throw new ValidationError('Email is already in use');
+  }
+
+  // Role-specific ID uniqueness
+  if (data.role === 'student' && data.studentRegID) {
+    const existingStudent = await authRepo.getUserByStudentRegID(data.studentRegID);
+    if (existingStudent) {
+      throw new ValidationError('This Student Registration Number is already registered');
+    }
+  } else if (data.role === 'teacher' && data.employeeID) {
+    const existingTeacher = await authRepo.getUserByEmployeeID(data.employeeID);
+    if (existingTeacher) {
+      throw new ValidationError('This Employee ID is already registered');
+    }
   }
 
   const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -36,6 +50,9 @@ export async function registerUser(data: RegisterRequest): Promise<{ message: st
     name: data.name,
     email: data.email,
     password: hashedPassword,
+    role: data.role,
+    studentRegID: data.studentRegID,
+    employeeID: data.employeeID,
   });
 
   // Send OTP for email verification
@@ -90,47 +107,46 @@ export async function verifyEmailOTP(email: string, otp: string): Promise<AuthRe
 
 // ✅ UPDATED: loginUser now checks email verification
 export async function loginUser(data: LoginRequest): Promise<AuthResponse> {
-  console.log('🔐 Login attempt for email:', data.email);
+  console.log('🔐 Login attempt:', data.identifier);
   
-  const user = await authRepo.getUserByEmail(data.email);
-  if (!user) {
-    console.log('❌ User not found:', data.email);
-    throw new AppError('Invalid email or password', 401);
+  let user = null;
+
+  if (data.identifier.includes('@')) {
+    user = await authRepo.getUserByEmail(data.identifier);
+  } else if (/^\d{2}[A-Z]{3}\d{4}/.test(data.identifier) || data.identifier.toUpperCase().startsWith('VIT')) {
+    user = await authRepo.getUserByStudentRegID(data.identifier);
+  } else {
+    user = await authRepo.getUserByEmployeeID(data.identifier);
   }
 
-  console.log('✅ User found:', { id: user.userID, email: user.userEmail, isEmailVerified: user.isEmailVerified, isSuperAdmin: user.isSuperAdmin });
+  if (!user) {
+    console.log('❌ User not found:', data.identifier);
+    throw new AppError('Invalid credentials', 401);
+  }
+
+  console.log('✅ User found:', { id: user.userID, role: user.role });
 
   const isPasswordValid = await bcrypt.compare(data.password, user.userPassword);
   if (!isPasswordValid) {
-    console.log('❌ Invalid password for:', data.email);
-    throw new AppError('Invalid email or password', 401);
+    console.log('❌ Invalid password for:', data.identifier);
+    throw new AppError('Invalid credentials', 401);
   }
 
   console.log('✅ Password valid');
 
-  // Check if email is verified (skip check for super admins)
-  // TEMPORARY: Disabled for development since SendGrid is not configured
-  // if (!user.isEmailVerified && !user.isSuperAdmin) {
-  //   console.log('❌ Email not verified for:', data.email);
-  //   throw new AppError('Email not verified. Please verify your email to login.', 403);
-  // }
-
   if (!user.isEmailVerified && !user.isSuperAdmin && process.env.NODE_ENV === 'production') {
-    console.log('❌ Email not verified for:', data.email);
+    console.log('❌ Email not verified for:', data.identifier);
     throw new AppError('Email not verified. Please verify your email to login.', 403);
   }
 
-  console.log('✅ Email verification check passed (development mode)');
-
-  // ✅ JWT SIGNING: matches AuthUser interface
   const payload: AuthUser = {
-    id: user.userID.toString(),  // bigint → string
+    id: user.userID.toString(),
     role: user.role,
   };
 
   const token = jwt.sign(payload, config.jwtSecret, { expiresIn: config.jwtExpiresIn } as SignOptions);
 
-  console.log('✅ Login successful for:', data.email);
+  console.log('✅ Login successful');
 
   return {
     token,
@@ -146,12 +162,12 @@ export async function loginUser(data: LoginRequest): Promise<AuthResponse> {
 
 // ✅ Remove the unimplemented functions or implement them
 // These were throwing "not implemented" errors
-export async function register(input: { name: string; email: string; password: string; role: string }) {
-  return registerUser({ name: input.name, email: input.email, password: input.password, role: input.role });
+export async function register(input: RegisterRequest) {
+  return registerUser(input);
 }
 
-export async function login(input: { email: string; password: string }) {
-  return loginUser({ email: input.email, password: input.password });
+export async function login(input: LoginRequest) {
+  return loginUser(input);
 }
 
 // ✅ NEW: Change password with new hashed password

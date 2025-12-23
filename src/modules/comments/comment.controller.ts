@@ -11,10 +11,9 @@ function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
 
 export const createComment = asyncHandler(async (req: Request, res: Response) => {
     const input: CreateCommentRequest = req.body;
-    await CommentService.createComment(input);
-    res.status(201).json({ message: "Comment created successfully" });
-}
-);
+    const created = await CommentService.createComment(input);
+    res.status(201).json(toJSON(created));
+});
 
 export const getComment = asyncHandler(async (req: Request, res: Response) => {
     const commID = BigInt(req.params.commID);
@@ -42,3 +41,9 @@ export const CommentController ={
     updateComment,
     deleteComment,
 }
+
+export const listCommentsByVideo = asyncHandler(async (req: Request, res: Response) => {
+    const vidID = BigInt(req.params.vidID);
+    const list = await CommentService.listCommentsByVideoID(vidID);
+    res.json(toJSON(list));
+});

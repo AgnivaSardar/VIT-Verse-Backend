@@ -7,4 +7,5 @@ const subscriptionController = SubscriptionController;
 
 router.post("/subscribe", requireAuth, subscriptionController.subscribe);
 router.post("/unsubscribe", requireAuth, subscriptionController.unsubscribe);
+router.get("/mine", requireAuth, subscriptionController.listMySubscriptions);
 export default router;

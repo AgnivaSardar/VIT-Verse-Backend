@@ -5,7 +5,7 @@ import { socketEvents } from "../realtime/socket.handlers";
 import { CreateCommentRequest, UpdateCommentRequest } from "./comment.types";
 import { userRepository } from "../users/user.repository";
 
-export async function createComment(data: CreateCommentRequest): Promise<void> {
+export async function createComment(data: CreateCommentRequest) {
     const comment = await commentRepo.createComment(data);
     
     // Emit socket event to broadcast new comment
@@ -20,6 +20,7 @@ export async function createComment(data: CreateCommentRequest): Promise<void> {
     } catch (err) {
         console.log('Socket or user fetch error on comment:', err);
     }
+    return comment;
 }
 
 export async function getCommentByID(commID: bigint) {
@@ -44,6 +45,10 @@ export async function deleteComment(commID: bigint): Promise<void> {
         throw new AppError("Comment not found", 404);
     }
     await commentRepo.deleteComment(commID);
+}
+
+export async function listCommentsByVideoID(vidID: bigint) {
+    return commentRepo.listCommentsByVideoID(vidID);
 }
 
 export function createCommentService(input: CreateCommentRequest) {

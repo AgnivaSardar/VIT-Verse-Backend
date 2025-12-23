@@ -9,10 +9,11 @@ export interface Channel {
   isPremium: boolean;
   isPresent: boolean;  // Keep if needed
   createdAt: Date;
+  channelImage?: string;
 }
 
 // Request helpers
-type ChannelInput = Pick<Channel, 'channelName' | 'channelDescription' | 'channelType' | 'channelSubscribers' | 'isPremium'>;
+type ChannelInput = Pick<Channel, 'channelName' | 'channelDescription' | 'channelType' | 'channelSubscribers' | 'isPremium' | 'channelImage'>;
 export interface CreateChannelRequest extends ChannelInput {
   userID: bigint;
 }

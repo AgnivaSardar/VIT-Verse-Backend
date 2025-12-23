@@ -6,3 +6,26 @@ node_modules
 
 # Super Admin Credentials (NEVER COMMIT THIS)
 SUPER_ADMIN_CREDENTIALS.txt
+
+# Media files (videos and images)
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.mp4
+*.webm
+*.avi
+*.mov
+*.mkv
+*.flv
+*.wmv
+*.webp
+*.svg
+*.bmp
+*.tiff
+*.ico
+*.avif
+
+# Uploads directory
+uploads/
+uploads/**/*

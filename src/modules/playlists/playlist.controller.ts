@@ -1,5 +1,5 @@
 import { Request,Response } from "express";
-import * as playlistService from "./playlist.repository";
+import * as playlistService from "./playlist.service";
 import { CreatePlaylistRequest, UpdatePlaylistRequest } from "./playlist.types";
 import { toJSON } from "../../common/utils";
 import { AuthRequest } from "../../middlewares/auth.middleware";

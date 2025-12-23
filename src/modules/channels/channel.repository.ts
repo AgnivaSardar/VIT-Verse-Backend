@@ -25,6 +25,7 @@ export async function createChannel(data: {
     channelType: 'public' | 'private' | 'protected';
     channelSubscribers: bigint[];
     isPremium: boolean;
+    channelImage?: string;
 }) {
   return prisma.channel.create({
     data: {
@@ -34,6 +35,7 @@ export async function createChannel(data: {
       channelType: data.channelType,
       channelSubscribers: data.channelSubscribers[0], // Store only the first subscriber, or adjust as needed
       isPremium: data.isPremium,
+      channelImage: data.channelImage,
     },
   });
 }
@@ -44,6 +46,7 @@ export async function updateChannel(id: bigint, data: {
     channelType?: 'public' | 'private' | 'protected';
     channelSubscribers?: bigint; // Change to single bigint
     isPremium?: boolean;
+    channelImage?: string;
 }) {
   return prisma.channel.update({
     where: { channelID: id },

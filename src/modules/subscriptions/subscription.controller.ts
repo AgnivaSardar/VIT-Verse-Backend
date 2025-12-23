@@ -1,6 +1,7 @@
 import { Request,Response } from "express";
 import * as subscribeService from "./subscription.service";
 import { CreateSubscriptionRequest, DeleteSubscriptionRequest } from "./subscription.types";
+import { toJSON } from "../../common/utils";
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
     return (req: Request, res: Response, next: (err: any) => void) => {
@@ -25,7 +26,16 @@ export const unsubscribe = asyncHandler(async (req: Request, res: Response) => {
     res.json({ message: "Unsubscribed successfully" });
 });
 
+export const listMySubscriptions = asyncHandler(async (req: Request, res: Response) => {
+    const userID = BigInt(String(req.user!.id));
+    const page = Number(req.query.page || 1);
+    const limit = Number(req.query.limit || 50);
+    const channels = await subscribeService.listMySubscriptions(userID, page, limit);
+    res.json({ data: toJSON(channels) });
+});
+
 export const SubscriptionController = {
     subscribe,
     unsubscribe,
+    listMySubscriptions,
 };

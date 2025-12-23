@@ -6,6 +6,9 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
+import path from 'path';
+import hpp from 'hpp';
+import { requireSignedRequests } from './middlewares/signature.middleware';
 
 // === ALL YOUR MODULE ROUTES ===
 import authRoutes from './modules/auth/auth.routes';
@@ -32,18 +35,42 @@ import { errorHandler } from './middlewares/error.middleware';
 
 const app: Application = express();
 
+// Trust reverse proxy (needed for correct req.secure and IP when behind CDN/Proxy)
+app.set('trust proxy', 1);
+
 // === SECURITY ===
+// Relax cross origin resource policy so thumbnails/videos served from /uploads can be loaded by the frontend.
 app.use(helmet({
   contentSecurityPolicy: false,
+  crossOriginResourcePolicy: false,
+  crossOriginEmbedderPolicy: false,
+  hsts: process.env.NODE_ENV === 'production' ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false,
 }));
+
+// Enforce HTTPS in production (reject plain HTTP)
+if (process.env.NODE_ENV === 'production') {
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (req.secure || req.headers['x-forwarded-proto'] === 'https') return next();
+    return res.status(400).json({ error: 'HTTPS required' });
+  });
+}
 
 const allowedOrigins = process.env.CLIENT_ORIGIN?.split(',') || ['http://localhost:3000', 'http://localhost:5173'];
 console.log('🔐 CORS allowed origins:', allowedOrigins);
 
 app.use(cors({
-  origin: allowedOrigins,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl) and allow listed origins
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-bypass-rate-limit', 'Cache-Control', 'Pragma'],
   credentials: true,
+  maxAge: 600,
 }));
+
+// Note: app.use(cors(...)) handles preflight automatically in Express 5
 
 // === PERFORMANCE ===
 app.use(compression());
@@ -69,6 +96,36 @@ app.use('/api/', limiter);
 // === PARSERS ===
 app.use(express.json({ limit: '50mb' })); // larger for video metadata
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// === HTTP PARAMETER POLLUTION PROTECTION ===
+app.use(hpp());
+
+// === OPTIONAL: HMAC SIGNED REQUESTS ===
+if (process.env.REQUIRE_API_SIGNING === 'true') {
+  const secret = process.env.API_SIGNING_SECRET;
+  if (!secret) {
+    console.warn('REQUIRE_API_SIGNING=true but API_SIGNING_SECRET is not set. Signed requests disabled.');
+  } else {
+    app.use('/api', requireSignedRequests(secret));
+    console.log('🔒 API request signing enabled for /api');
+  }
+}
+
+// === STATIC FILES - Serve uploaded videos ===
+const uploadsPath = path.join(process.cwd(), 'uploads');
+app.use('/uploads', express.static(uploadsPath, {
+  setHeaders: (res, _path, stat) => {
+    const originHeader = res.req?.headers.origin;
+    const matchedOrigin = originHeader && allowedOrigins.includes(originHeader) ? originHeader : '*';
+    res.set('Access-Control-Allow-Origin', matchedOrigin);
+    res.set('Access-Control-Allow-Credentials', 'true');
+    res.set('Accept-Ranges', 'bytes');
+    if (stat && stat.size) {
+      res.set('Content-Length', stat.size.toString());
+    }
+  }
+}));
+console.log('📁 Serving uploads from:', uploadsPath);
 
 // === LOGGING ===
 if (process.env.NODE_ENV !== 'test') {

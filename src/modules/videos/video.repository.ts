@@ -14,6 +14,7 @@ export const videoRepository = {
         take: 1,
       },
       channel: true,
+      stats: true,
     };
 
     if (includeTags) {
@@ -61,6 +62,7 @@ export const videoRepository = {
           take: 1,
         },
         channel: true,
+        stats: true,
         videoTags: {
           include: {
             tag: {
@@ -80,6 +82,12 @@ export const videoRepository = {
     });
   },
 
+  delete(vidID: bigint) {
+    return prisma.video.delete({
+      where: { vidID },
+    });
+  },
+
   getMyVideos(userID: bigint, limit: number, offset: number) {
     return prisma.video.findMany({
       where: {
@@ -93,6 +101,7 @@ export const videoRepository = {
       include: {
         images: { where: { isPrimary: true }, take: 1 },
         channel: true,
+        stats: true,
       },
     });
   },

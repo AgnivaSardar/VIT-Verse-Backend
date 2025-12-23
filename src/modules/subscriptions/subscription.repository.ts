@@ -33,6 +33,17 @@ export async function listSubscriptionsByUser(userID: bigint, page: number, limi
         take: limit,
     });
 }
+
+export async function listSubscriptionsWithChannelsByUser(userID: bigint, page: number, limit: number) {
+    return prisma.subscription.findMany({
+        where: { userID },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+            channel: true,
+        },
+    });
+}
 export async function UpdateSubscription(id: bigint, data: {
     channelID?: bigint;
 }) {

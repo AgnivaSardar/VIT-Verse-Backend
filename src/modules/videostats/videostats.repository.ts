@@ -59,56 +59,91 @@ export async function listVideoStats(page: number, limit: number) {
 }
 
 export async function incrementViewsCount(vidID: bigint) {
-  return prisma.videoStats.update({
+  return prisma.videoStats.upsert({
     where: { vidID },
-    data: {
+    update: {
       viewsCount: {
         increment: 1,
       },
+    },
+    create: {
+      vidID,
+      viewsCount: 1,
+      likesCount: 0,
+      commentsCount: 0,
+      sharesCount: 0,
     },
   });
 }
 
 export async function incrementLikesCount(vidID: bigint) {
-  return prisma.videoStats.update({
+  return prisma.videoStats.upsert({
     where: { vidID },
-    data: {
+    update: {
       likesCount: {
         increment: 1,
       },
+    },
+    create: {
+      vidID,
+      viewsCount: 0,
+      likesCount: 1,
+      commentsCount: 0,
+      sharesCount: 0,
     },
   });
 }
 
 export async function decrementLikesCount(vidID: bigint) {
-  return prisma.videoStats.update({
+  return prisma.videoStats.upsert({
     where: { vidID },
-    data: {
+    update: {
       likesCount: {
         decrement: 1,
       },
+    },
+    create: {
+      vidID,
+      viewsCount: 0,
+      likesCount: 0,
+      commentsCount: 0,
+      sharesCount: 0,
     },
   });
 }
 
 export async function incrementCommentsCount(vidID: bigint) {
-  return prisma.videoStats.update({
+  return prisma.videoStats.upsert({
     where: { vidID },
-    data: {
+    update: {
       commentsCount: {
         increment: 1,
       },
+    },
+    create: {
+      vidID,
+      viewsCount: 0,
+      likesCount: 0,
+      commentsCount: 1,
+      sharesCount: 0,
     },
   });
 }
 
 export async function incrementSharesCount(vidID: bigint) {
-  return prisma.videoStats.update({
+  return prisma.videoStats.upsert({
     where: { vidID },
-    data: {
+    update: {
       sharesCount: {
         increment: 1,
       },
+    },
+    create: {
+      vidID,
+      viewsCount: 0,
+      likesCount: 0,
+      commentsCount: 0,
+      sharesCount: 1,
     },
   });
 }

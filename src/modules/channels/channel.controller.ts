@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import * as channelService from "./channel.service";
 import { CreateChannelRequest, UpdateChannelRequest } from "./channel.types";
 import { toJSON } from "../../common/utils";
+import { uploadToS3, isS3Configured } from "../../config/s3";
+import crypto from "crypto";
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
   return (req: Request, res: Response, next: (err: any) => void) => {
@@ -11,9 +13,40 @@ function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
 
 export const createChannel = asyncHandler(async (req: Request, res: Response) => {
   const userID = BigInt(String(req.user!.id));
+  const logoFile = (req as any).file;
+  
+  let channelImageUrl: string | undefined;
+  
+  // Upload logo to S3 if provided
+  if (logoFile && isS3Configured()) {
+    const timestamp = Date.now();
+    const randomHash = crypto.randomBytes(8).toString('hex');
+    const ext = logoFile.originalname.split('.').pop();
+    const s3Key = `channel-logos/${userID}/${timestamp}-${randomHash}.${ext}`;
+    
+    channelImageUrl = await uploadToS3({
+      key: s3Key,
+      body: logoFile.buffer,
+      metadata: {
+        originalName: logoFile.originalname,
+        mimeType: logoFile.mimetype,
+        size: logoFile.size,
+        uploadedBy: userID.toString(),
+      },
+      contentType: logoFile.mimetype,
+      isPublic: true,
+    });
+    console.log(`✅ Channel logo uploaded: ${channelImageUrl}`);
+  } else if (logoFile) {
+    // Fallback to local storage path (shouldn't happen with STORAGE_TYPE=s3)
+    channelImageUrl = `uploads/channel-logos/${logoFile.originalname}`;
+  }
+  
   const input: CreateChannelRequest = {
     ...req.body,
     userID,
+    channelImage: channelImageUrl,
+    isPremium: req.body.isPremium === 'true' || req.body.isPremium === true,
   };
   await channelService.createChannel(input);
   res.status(201).json({ message: "Channel created successfully" });
@@ -28,7 +61,8 @@ export const getChannel = asyncHandler(async (req: Request, res: Response) => {
 
 export const deleteChannel = asyncHandler(async (req: Request, res: Response) => {
   const channelID = BigInt(req.params.channelID);
-  await channelService.deleteChannel(channelID);
+  const userID = BigInt(String(req.user!.id));
+  await channelService.deleteChannel(channelID, userID);
   res.json({ message: "Channel deleted successfully" });
 }
 );
@@ -36,8 +70,41 @@ export const deleteChannel = asyncHandler(async (req: Request, res: Response) =>
 // Additional controller methods (updateChannel, listChannels, subscribeToChannel, unsubscribeFromChannel) can be added similarly.
 export const updateChannel = asyncHandler(async (req: Request, res: Response) => {
   const channelID = BigInt(req.params.channelID);
-  const input: UpdateChannelRequest = req.body;
-  await channelService.updateChannelService(channelID, input);
+  const userID = BigInt(String(req.user!.id));
+  const logoFile = (req as any).file;
+  
+  let channelImageUrl: string | undefined;
+  
+  // Upload new logo to S3 if provided
+  if (logoFile && isS3Configured()) {
+    const timestamp = Date.now();
+    const randomHash = crypto.randomBytes(8).toString('hex');
+    const ext = logoFile.originalname.split('.').pop();
+    const s3Key = `channel-logos/${userID}/${timestamp}-${randomHash}.${ext}`;
+    
+    channelImageUrl = await uploadToS3({
+      key: s3Key,
+      body: logoFile.buffer,
+      metadata: {
+        originalName: logoFile.originalname,
+        mimeType: logoFile.mimetype,
+        size: logoFile.size,
+        uploadedBy: userID.toString(),
+      },
+      contentType: logoFile.mimetype,
+      isPublic: true,
+    });
+    console.log(`✅ Channel logo updated: ${channelImageUrl}`);
+  } else if (logoFile) {
+    channelImageUrl = `uploads/channel-logos/${logoFile.originalname}`;
+  }
+  
+  const input: UpdateChannelRequest = {
+    ...req.body,
+    channelImage: channelImageUrl,
+    isPremium: req.body.isPremium === 'true' || req.body.isPremium === true ? true : req.body.isPremium === 'false' || req.body.isPremium === false ? false : undefined,
+  };
+  await channelService.updateChannelService(channelID, userID, input);
   res.json({ message: "Channel updated successfully" });
 }
 
@@ -86,6 +153,19 @@ export const getMyChannel = asyncHandler(async (req: Request, res: Response) => 
   res.json(toJSON(channel));
 });
 
+export const getChannelStats = asyncHandler(async (req: Request, res: Response) => {
+  const channelID = BigInt(req.params.channelID);
+  // Only allow owner to see full statistics
+  const channel = await channelService.getChannelByID(channelID);
+  const requesterID = req.user?.id ? BigInt(String(req.user!.id)) : null;
+  if (!requesterID || BigInt(channel.userID) !== requesterID) {
+    res.status(403).json({ message: 'Forbidden: statistics are only available to the channel owner' });
+    return;
+  }
+  const stats = await channelService.getChannelStats(channelID);
+  res.json(toJSON(stats));
+});
+
 export const ChannelController = {
   createChannel,
   getChannel,
@@ -96,4 +176,5 @@ export const ChannelController = {
   unsubscribeFromChannel,
   getChannelByNameAndUser,
   getMyChannel,
+  getChannelStats,
 };

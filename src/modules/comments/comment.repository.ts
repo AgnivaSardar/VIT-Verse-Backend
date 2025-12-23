@@ -20,6 +20,13 @@ export async function createComment(data: {
   });
 }
 
+export async function listCommentsByVideoID(vidID: bigint) {
+  return prisma.comments.findMany({
+    where: { vidID },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
 export async function updateComment(id: bigint, data: {
     vidID?: bigint;
     description?: string;

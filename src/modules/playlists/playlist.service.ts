@@ -11,11 +11,17 @@ export async function getPlaylistByID(playlistID: bigint) {
     if (!playlist) {
         throw new AppError("Playlist not found", 404);
     }
-    return playlist;
+    return attachThumbnail(playlist);
 }
 
 export async function getPlaylistsByUserID(userID: bigint) {
-  return await playlistRepo.getPlaylistsByUserID(userID);
+  const playlists = await playlistRepo.getPlaylistsByUserID(userID);
+  return playlists.map(attachThumbnail);
+}
+
+export async function getAllPublicPlaylists() {
+  const playlists = await playlistRepo.getAllPublicPlaylists();
+  return playlists.map(attachThumbnail);
 }
 
 export async function updatePlaylist(playlistID: bigint, data: UpdatePlaylistRequest): Promise<void> {
@@ -60,5 +66,15 @@ export function updatePlaylistService(playlistID: bigint, input: UpdatePlaylistR
 
 export function deletePlaylistService(playlistID: bigint) {
     throw new Error('Function not implemented.');
+}
+
+function attachThumbnail(playlist: any) {
+  // Find first video's primary image (ordered by position asc in repo)
+  const first = playlist?.videos?.[0]?.video;
+  const thumb = first?.images?.[0]?.imgURL || null;
+  return {
+    ...playlist,
+    thumbnail: thumb,
+  };
 }
 

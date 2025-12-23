@@ -33,3 +33,8 @@ export async function unsubscribe(channelID: bigint, userID: bigint) {
     }
     await subscriptionRepo.deleteSubscription(existingSubscription.subID);
 }
+
+export async function listMySubscriptions(userID: bigint, page = 1, limit = 50) {
+    const subs = await subscriptionRepo.listSubscriptionsWithChannelsByUser(userID, page, limit);
+    return subs.map((sub) => sub.channel).filter(Boolean);
+}

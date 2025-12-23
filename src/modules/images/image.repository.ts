@@ -8,18 +8,18 @@ export async function getImageByID(id: bigint) {
 
 export async function createImage(data: {
   vidID: bigint;
-  s3Bucket: string;
-    s3Key: string;
-    imgURL: string;
-    isPrimary: boolean;
+  s3Bucket?: string | null;
+  s3Key?: string | null;
+  imgURL: string;
+  isPrimary: boolean;
 }) {
-    return prisma.image.create({
+  return prisma.image.create({
     data: {
       vidID: data.vidID,
-      s3Bucket: data.s3Bucket,
-        s3Key: data.s3Key,
-        imgURL: data.imgURL,
-        isPrimary: data.isPrimary,
+      s3Bucket: data.s3Bucket ?? null,
+      s3Key: data.s3Key ?? null,
+      imgURL: data.imgURL,
+      isPrimary: data.isPrimary,
     },
   });
 }
