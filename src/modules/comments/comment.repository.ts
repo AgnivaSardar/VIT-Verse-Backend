@@ -24,6 +24,13 @@ export async function listCommentsByVideoID(vidID: bigint) {
   return prisma.comments.findMany({
     where: { vidID },
     orderBy: { createdAt: 'desc' },
+    include: {
+      user: {
+        select: {
+          userName: true,
+        },
+      },
+    },
   });
 }
 

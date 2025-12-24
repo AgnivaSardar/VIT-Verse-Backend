@@ -6,6 +6,7 @@ export interface Comment {
     createdAt: Date;
     updatedAt: Date;
     isPresent: boolean;
+    userName?: string;
 }
 
 // Request helpers

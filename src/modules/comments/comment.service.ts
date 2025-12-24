@@ -48,7 +48,12 @@ export async function deleteComment(commID: bigint): Promise<void> {
 }
 
 export async function listCommentsByVideoID(vidID: bigint) {
-    return commentRepo.listCommentsByVideoID(vidID);
+    const comments = await commentRepo.listCommentsByVideoID(vidID);
+    // Map userName from joined user object
+    return comments.map((c: any) => ({
+        ...c,
+        userName: c.user?.userName || c.userName || "Unknown User",
+    }));
 }
 
 export function createCommentService(input: CreateCommentRequest) {
