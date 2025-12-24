@@ -392,9 +392,51 @@ export const searchVideosByTitleHandler = async (req: Request, res: Response) =>
 export const updateVideoHandler = async (req: Request, res: Response) => {
   try {
     const vidID = BigInt(req.params.id);
-    const data = req.body;
-    const video = await videoService.updateVideo(vidID, data);
-    res.json(video);
+    let update: any = {};
+
+    // If multipart/form-data, fields may be in req.body as strings
+    // Normalize tags, playlistID, thumbnail
+    if (req.is('multipart/form-data')) {
+      // Tags
+      if (req.body && typeof req.body.tags !== 'undefined') {
+        if (req.body.tags) {
+          try {
+            const parsed = JSON.parse(req.body.tags);
+            update.tags = Array.isArray(parsed) ? parsed : String(parsed).split(',').map((t: string) => t.trim()).filter(Boolean);
+          } catch {
+            update.tags = String(req.body.tags).split(',').map((t: string) => t.trim()).filter(Boolean);
+          }
+        } else {
+          update.tags = [];
+        }
+      }
+      // Playlist
+      if (req.body && req.body.playlistID) {
+        update.playlistID = BigInt(req.body.playlistID);
+      }
+      // Thumbnail (handle file upload)
+      const thumbFile = (req as any).files?.thumbnail?.[0];
+      if (thumbFile?.path) {
+        update.thumbnail = thumbFile.path;
+      }
+      // Other fields
+      if (req.body && req.body.title) update.title = req.body.title;
+      if (req.body && req.body.description) update.description = req.body.description;
+      if (req.body && req.body.visibility) update.visibility = req.body.visibility;
+    } else {
+      // JSON body
+      update = req.body ? { ...req.body } : {};
+      if (update.playlistID) update.playlistID = BigInt(update.playlistID);
+    }
+
+    // Remove empty fields
+    Object.keys(update).forEach((k) => {
+      if (update[k] === undefined || update[k] === null || update[k] === '') delete update[k];
+    });
+
+    // Call service
+    const video = await videoService.updateVideo(vidID, update);
+    res.json(toJSON(video));
   } catch (err) {
     console.error('Update video error:', err);
     res.status(500).json({ message: 'Internal server error' });

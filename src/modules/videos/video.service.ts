@@ -144,6 +144,10 @@ export const videoService = {
 
   async updateVideo(vidID: bigint, data: UpdateVideoInput) {
     const video = await videoRepository.update(vidID, data as Prisma.VideoUpdateInput);
+    // Update tags if present
+    if (data.tags && Array.isArray(data.tags) && data.tags.length > 0) {
+      await tagService.addTagToVideo(vidID, data.tags);
+    }
     return videoRepository.findById(vidID, true);
   },
 
@@ -158,13 +162,26 @@ export const videoService = {
     fileName: string,
     channelID: bigint,
   ): Promise<CreateVideoInput> {
-    const tags = body.tags
-      ? typeof body.tags === 'string'
-        ? JSON.parse(body.tags)
-        : Array.isArray(body.tags)
-        ? body.tags
-        : []
-      : [];
+    let tags: string[] = [];
+    if (body.tags) {
+      if (Array.isArray(body.tags)) {
+        tags = body.tags.map((t: any) => String(t).trim()).filter(Boolean);
+      } else if (typeof body.tags === 'string') {
+        // Try JSON parse first (frontend may send JSON array as string)
+        try {
+          const parsed = JSON.parse(body.tags);
+          if (Array.isArray(parsed)) {
+            tags = parsed.map((t: any) => String(t).trim()).filter(Boolean);
+          } else if (typeof parsed === 'string') {
+            // single string inside JSON
+            tags = parsed.split(',').map(s => s.trim()).filter(Boolean);
+          }
+        } catch (_err) {
+          // Fallback: comma-separated string (e.g. "tag1,tag2")
+          tags = body.tags.split(',').map((s: string) => s.trim()).filter(Boolean);
+        }
+      }
+    }
 
     return {
       channelID,

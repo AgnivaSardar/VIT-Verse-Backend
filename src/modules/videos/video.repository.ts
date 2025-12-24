@@ -69,7 +69,6 @@ export const videoRepository = {
               select: { id: true, name: true, color: true },
             },
           },
-          take: 5, // limit tags per video
         },
       },
     });
