@@ -9,7 +9,7 @@ import prisma from './config/prisma';
 dotenv.config();
 
 import app from './app';
-import { initRedis } from './config/redis';
+import { redis } from './config/redis';
 import { initSocketIO } from './modules/realtime/socket.server';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -52,9 +52,8 @@ async function bootstrap() {
   try {
     console.log('🚀 Starting VITVerse Backend...');
 
-    // await initRedis();
-    // console.log('✅ Redis ready');
-    initRedis().then(() => console.log('✅ Redis ready (mocked)'));
+    // Redis connection is initialized on import (see config/redis.ts)
+    // No need to call initRedis; redis is ready for use
 
     await prisma.$connect();  // ← ADD THIS
     console.log('✅ Prisma ready');

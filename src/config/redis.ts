@@ -1,11 +1,11 @@
 // src/config/redis.ts
-export const initRedis = async () => {
-  console.log('⚠️ Redis disabled (development mode)');
-  return {
-    connect: async () => {},
-    on: () => {},
-    get: async () => null,
-    set: async () => 'OK',
-    disconnect: async () => {}
-  } as any;
-};
+import Redis from 'ioredis';
+
+export const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+
+redis.on('connect', () => {
+  console.log('✅ Connected to Redis');
+});
+redis.on('error', (err) => {
+  console.error('❌ Redis error:', err);
+});

@@ -8,6 +8,8 @@ import { channelService } from '../channels/channel.service';
 import { getS3PublicUrl, isS3Configured } from '../../config/s3';
 import fs from 'fs';
 import path from 'path';
+import { compressAndScaleVideo } from './video.compress';
+import { videoCompressionConfig } from '../../config/videoCompression';
 
 export const deleteVideoHandler = async (req: Request, res: Response) => {
   try {
@@ -109,6 +111,7 @@ const decorateVideoMedia = (video: any, baseUrl: string) => {
   return video;
 };
 
+// Compress and scale uploaded video before storage
 export const uploadVideoHandler = async (req: Request, res: Response) => {
   try {
     const file = (req as any).files?.video?.[0] || req.file;
@@ -118,6 +121,47 @@ export const uploadVideoHandler = async (req: Request, res: Response) => {
     }
 
     const uploaderID = BigInt(String(req.user!.id));
+
+    // --- Video Compression/Scaling ---
+    // Accept compression settings from request body, fallback to config defaults
+    const {
+      maxWidth,
+      maxHeight,
+      videoBitrate,
+      crf,
+      preset,
+    } = req.body || {};
+
+    let processedFilePath = file.path;
+    let processedFileBuffer: Buffer | undefined = undefined;
+    let processedFileSize = file.size;
+    let processedMimeType = file.mimetype;
+    let tempCompressedPath: string | null = null;
+    try {
+      const ext = path.extname(file.originalname) || '.mp4';
+      const tempDir = path.join(process.cwd(), 'uploads', 'temp');
+      if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+      tempCompressedPath = path.join(tempDir, `compressed-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+      await compressAndScaleVideo(file.path, tempCompressedPath, {
+        maxWidth: maxWidth ? Number(maxWidth) : videoCompressionConfig.maxWidth,
+        maxHeight: maxHeight ? Number(maxHeight) : videoCompressionConfig.maxHeight,
+        videoBitrate: videoBitrate || videoCompressionConfig.videoBitrate,
+        crf: crf ? Number(crf) : videoCompressionConfig.crf,
+        preset: preset || videoCompressionConfig.preset,
+      });
+      if (fs.existsSync(tempCompressedPath)) {
+        processedFilePath = tempCompressedPath;
+        processedFileBuffer = fs.readFileSync(tempCompressedPath);
+        processedFileSize = processedFileBuffer.length;
+        processedMimeType = 'video/mp4';
+      }
+    } catch (err) {
+      console.warn('Video compression failed, using original file', err);
+      processedFilePath = file.path;
+      processedFileBuffer = undefined;
+      processedFileSize = file.size;
+      processedMimeType = file.mimetype;
+    }
     
     // Check if user has a channel
     const userChannel = await channelService.getUserChannel(uploaderID);
@@ -128,28 +172,29 @@ export const uploadVideoHandler = async (req: Request, res: Response) => {
     const storageType: 'local' | 's3' =
       process.env.STORAGE_TYPE === 's3' ? 's3' : 'local';
 
+
     const input = await videoService.parseUploadInput(
       req.body,
-      storageType === 'local' ? file.path : file.filename!,
+      storageType === 'local' ? processedFilePath : file.filename!,
       file.originalname,
       userChannel.channelID,
     );
 
-    // For S3, read file buffer and pass it along
-    let fileBuffer: Buffer | undefined;
-    if (storageType === 's3' && file.path) {
-      fileBuffer = fs.readFileSync(file.path);
+    // For S3, use processed buffer; for local, use processed path
+    let fileBuffer: Buffer | undefined = undefined;
+    if (storageType === 's3' && processedFilePath) {
+      fileBuffer = processedFileBuffer || fs.readFileSync(processedFilePath);
     }
 
     const video = await videoService.createVideo(
       input,
-      storageType === 'local' ? file.path : file.filename!,
+      storageType === 'local' ? processedFilePath : file.filename!,
       file.originalname,
       storageType,
       uploaderID,
       fileBuffer,
-      file.mimetype,
-      file.size,
+      processedMimeType,
+      processedFileSize,
     );
 
     if (!video) {
@@ -233,6 +278,7 @@ export const uploadVideoHandler = async (req: Request, res: Response) => {
       }
     }
 
+
     // Clean up temp files
     if (shouldCleanupTempFile && videoFilePath) {
       try {
@@ -242,7 +288,15 @@ export const uploadVideoHandler = async (req: Request, res: Response) => {
         console.warn('Failed to delete temp video file:', err);
       }
     }
-    
+    // Clean up compressed temp file
+    if (tempCompressedPath && fs.existsSync(tempCompressedPath)) {
+      try {
+        fs.unlinkSync(tempCompressedPath);
+        console.log('🧹 Cleaned up compressed temp video file');
+      } catch (err) {
+        console.warn('Failed to delete compressed temp video file:', err);
+      }
+    }
     if (storageType === 's3' && file.path) {
       try {
         fs.unlinkSync(file.path);

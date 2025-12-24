@@ -32,6 +32,11 @@ model Users {
   notifications Notifications[]
   views     Views[]
   reports   Reports[]        @relation("ReportReporter")
+
+  @@index([userEmail])
+  @@index([role])
+  @@index([isActive])
+  @@index([createdAt(sort: Desc)])
 }
 
 model Student {
@@ -67,6 +72,11 @@ model Channel {
   user          Users          @relation(fields: [userID], references: [userID], onDelete: Cascade)
   videos        Video[]
   subscriptions Subscription[]
+
+  @@index([userID])
+  @@index([isAvailableToPublic])
+  @@index([createdAt(sort: Desc)])
+  @@index([channelName])
 }
 
 model Subscription {
@@ -111,6 +121,15 @@ model Video {
   views      Views[]
   stats      VideoStats?
   reports    Reports[]
+
+  @@index([channelID])
+  @@index([visibility])
+  @@index([isAvailableToPublic])
+  @@index([createdAt(sort: Desc)])
+  @@index([updatedAt(sort: Desc)])
+  @@index([processingStatus])
+  @@index([channelID, createdAt(sort: Desc)])
+  @@index([channelID, isAvailableToPublic])
 }
 
 model Image {
@@ -253,6 +272,10 @@ model Notifications {
   createdAt DateTime @default(now())
 
   user Users @relation(fields: [userID], references: [userID], onDelete: Cascade)
+
+  @@index([userID])
+  @@index([userID, isRead])
+  @@index([createdAt(sort: Desc)])
 }
 
 model Jobs {
@@ -263,4 +286,9 @@ model Jobs {
   attempts  Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now())
+
+  @@index([status])
+  @@index([type])
+  @@index([createdAt(sort: Asc)])
+  @@index([status, createdAt])
 }
