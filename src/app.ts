@@ -32,6 +32,7 @@ import viewsRoutes from './modules/views/views.routes';
 
 // Middlewares
 import { errorHandler } from './middlewares/error.middleware';
+import { sanitizeMiddleware } from './common/sanitize';
 
 const app: Application = express();
 
@@ -96,6 +97,10 @@ app.use('/api/', limiter);
 // === PARSERS ===
 app.use(express.json({ limit: '50mb' })); // larger for video metadata
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// === SECURITY: SANITIZE RESPONSES ===
+// Remove sensitive fields from all API responses
+app.use('/api/', sanitizeMiddleware);
 
 // === HTTP PARAMETER POLLUTION PROTECTION ===
 app.use(hpp({}) as any);

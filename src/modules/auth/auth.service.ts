@@ -21,6 +21,7 @@ export interface AuthResponse {
     email: string;
     role: string;
     isEmailVerified: boolean;
+    isSuperAdmin: boolean;
   };
 }
 
@@ -56,10 +57,28 @@ export async function registerUser(data: RegisterRequest): Promise<{ message: st
   });
 
   // Send OTP for email verification
-  await sendOTP(user.userEmail, user.userName);
+  try {
+    await sendOTP(user.userEmail, user.userName);
+    console.log(`✅ OTP email queued for: ${user.userEmail}`);
+  } catch (error: any) {
+    console.error('❌ SendGrid error:', error.message);
+    // In development, auto-verify email to allow testing
+    // In production, fail registration if email cannot be sent
+    if (process.env.NODE_ENV === 'production') {
+      throw new AppError('Failed to send verification email. Please try again later.', 500);
+    } else {
+      console.warn('⚠️  Dev mode: Auto-verifying email due to SendGrid error');
+      await prisma.users.update({
+        where: { userEmail: user.userEmail },
+        data: { isEmailVerified: true },
+      });
+    }
+  }
 
   return {
-    message: 'Registration successful. Please check your email for OTP verification.',
+    message: process.env.NODE_ENV === 'production' 
+      ? 'Registration successful. Please check your email for OTP verification.'
+      : 'Registration successful. Email auto-verified in dev mode.',
     userId: user.userID.toString(),
   };
 }
@@ -101,6 +120,7 @@ export async function verifyEmailOTP(email: string, otp: string): Promise<AuthRe
       email: user.userEmail,
       role: user.role,
       isEmailVerified: user.isEmailVerified,
+      isSuperAdmin: user.isSuperAdmin,
     },
   };
 }
@@ -134,7 +154,8 @@ export async function loginUser(data: LoginRequest): Promise<AuthResponse> {
 
   console.log('✅ Password valid');
 
-  if (!user.isEmailVerified && !user.isSuperAdmin && process.env.NODE_ENV === 'production') {
+  // Email verification is required for all users except super admins
+  if (!user.isEmailVerified && !user.isSuperAdmin) {
     console.log('❌ Email not verified for:', data.identifier);
     throw new AppError('Email not verified. Please verify your email to login.', 403);
   }
@@ -156,6 +177,7 @@ export async function loginUser(data: LoginRequest): Promise<AuthResponse> {
       email: user.userEmail,
       role: user.role,
       isEmailVerified: user.isEmailVerified,
+      isSuperAdmin: user.isSuperAdmin,
     },
   };
 }

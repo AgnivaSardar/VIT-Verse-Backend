@@ -11,9 +11,15 @@ function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
 }
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
-  const input = registerSchema.parse(req.body);
-  const result = await authService.register(input);
-  res.status(201).json(result);
+  console.log('📥 Register body:', req.body);
+  try {
+    const input = registerSchema.parse(req.body);
+    const result = await authService.register(input);
+    res.status(201).json(result);
+  } catch (error: any) {
+    console.error('❌ Registration error:', error.message, error.stack);
+    throw error;
+  }
 });
 
 export const login = asyncHandler(async (req: Request, res: Response) => {

@@ -15,6 +15,20 @@ function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
 // USERS MANAGEMENT
 // ========================================
 
+const createUserSchema = z.object({
+  name: z.string().min(2),
+  email: z.string().email(),
+  password: z.string().min(6),
+  role: z.enum(['admin', 'student', 'teacher']),
+  isSuperAdmin: z.boolean().optional(),
+});
+
+export const createAdminUser = asyncHandler(async (req: Request, res: Response) => {
+  const data = createUserSchema.parse(req.body);
+  const result = await adminService.createAdminUser(data);
+  res.status(201).json(result);
+});
+
 export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 20;

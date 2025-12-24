@@ -3,8 +3,8 @@ import sgMail from '@sendgrid/mail';
 import crypto from 'crypto';
 
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || '';
-const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@vitvverse.com';
-const FROM_NAME = process.env.FROM_NAME || 'VIT-Verse';
+const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || process.env.FROM_EMAIL || 'noreply@vitverse.com';
+const FROM_NAME = process.env.SENDGRID_FROM_NAME || process.env.FROM_NAME || 'VIT-Verse';
 
 if (SENDGRID_API_KEY) {
   sgMail.setApiKey(SENDGRID_API_KEY);

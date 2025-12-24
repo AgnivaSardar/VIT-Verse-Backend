@@ -2,6 +2,7 @@
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../common/errors';
 import { emailService } from '../../services/email.service';
+import bcrypt from 'bcryptjs';
 
 interface PaginationParams {
   page: number;
@@ -10,9 +11,71 @@ interface PaginationParams {
   role?: string;
 }
 
+interface CreateAdminUserData {
+  name: string;
+  email: string;
+  password: string;
+  role: 'admin' | 'student' | 'teacher';
+  isSuperAdmin?: boolean;
+}
+
 // ========================================
 // USERS MANAGEMENT
 // ========================================
+
+export async function createAdminUser(data: CreateAdminUserData) {
+  // Check if user already exists
+  const existingUser = await prisma.users.findUnique({
+    where: { userEmail: data.email },
+  });
+
+  if (existingUser) {
+    throw new AppError('User with this email already exists', 400);
+  }
+
+  // Hash password
+  const hashedPassword = await bcrypt.hash(data.password, 10);
+
+  // Create user
+  const user = await prisma.users.create({
+    data: {
+      userName: data.name,
+      userEmail: data.email,
+      userPassword: hashedPassword,
+      role: data.role,
+      isActive: true,
+      isEmailVerified: true,
+      isSuperAdmin: data.isSuperAdmin || false,
+    },
+    select: {
+      userID: true,
+      userName: true,
+      userEmail: true,
+      role: true,
+      isActive: true,
+      isEmailVerified: true,
+      isSuperAdmin: true,
+      createdAt: true,
+    },
+  });
+
+  // Send notification
+  await emailService.sendAdminNotification(
+    'New Admin User Created',
+    `New ${data.role} user ${data.name} (${data.email}) has been created. Super Admin: ${data.isSuperAdmin ? 'Yes' : 'No'}`
+  );
+
+  return {
+    id: user.userID.toString(),
+    name: user.userName,
+    email: user.userEmail,
+    role: user.role,
+    isActive: user.isActive,
+    isEmailVerified: user.isEmailVerified,
+    isSuperAdmin: user.isSuperAdmin,
+    createdAt: user.createdAt,
+  };
+}
 
 export async function getAllUsers(params: PaginationParams) {
   const { page, limit, search, role } = params;
@@ -397,7 +460,7 @@ export async function getDashboardStats() {
     publicVideos,
     totalPlaylists,
     publicPlaylists,
-    recentUsers,
+    totalViewsResult,
   ] = await Promise.all([
     prisma.users.count(),
     prisma.users.count({ where: { isActive: true } }),
@@ -407,44 +470,22 @@ export async function getDashboardStats() {
     prisma.video.count({ where: { isAvailableToPublic: true } }),
     prisma.playlist.count(),
     prisma.playlist.count({ where: { isAvailableToPublic: true } }),
-    prisma.users.findMany({
-      take: 5,
-      orderBy: { createdAt: 'desc' },
-      select: {
-        userName: true,
-        userEmail: true,
-        role: true,
-        createdAt: true,
-      },
+    prisma.videoStats.aggregate({
+      _sum: { viewsCount: true },
     }),
   ]);
 
+  // Convert BigInt to Number
+  const totalViews = totalViewsResult._sum.viewsCount 
+    ? Number(totalViewsResult._sum.viewsCount) 
+    : 0;
+
   return {
-    users: {
-      total: totalUsers,
-      active: activeUsers,
-      inactive: totalUsers - activeUsers,
-    },
-    channels: {
-      total: totalChannels,
-      public: publicChannels,
-      hidden: totalChannels - publicChannels,
-    },
-    videos: {
-      total: totalVideos,
-      public: publicVideos,
-      hidden: totalVideos - publicVideos,
-    },
-    playlists: {
-      total: totalPlaylists,
-      public: publicPlaylists,
-      hidden: totalPlaylists - publicPlaylists,
-    },
-    recentUsers: recentUsers.map((user) => ({
-      name: user.userName,
-      email: user.userEmail,
-      role: user.role,
-      createdAt: user.createdAt,
-    })),
+    totalUsers,
+    activeUsers,
+    totalChannels,
+    totalVideos,
+    totalPlaylists,
+    totalViews,
   };
 }

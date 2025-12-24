@@ -1,19 +1,20 @@
 // src/modules/admin/admin.routes.ts
 import { Router } from 'express';
 import { requireAuth } from '../../middlewares/auth.middleware';
-import { requireSuperAdmin } from '../../middlewares/admin.middleware';
+import { requireAdminOrSuperAdmin } from '../../middlewares/admin.middleware';
 import * as adminController from './admin.controller';
 
 const router = Router();
 
 // All admin routes require authentication and super admin role
 router.use(requireAuth);
-router.use(requireSuperAdmin);
+router.use(requireAdminOrSuperAdmin);
 
 // Dashboard stats
 router.get('/stats', adminController.getDashboardStats);
 
 // Users management
+router.post('/users/create', adminController.createAdminUser);
 router.get('/users', adminController.getAllUsers);
 router.patch('/users/:id/toggle-status', adminController.toggleUserStatus);
 
