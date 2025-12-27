@@ -1,13 +1,21 @@
-import { Request, Response } from 'express';
+import { Request, Response, CookieOptions } from 'express';
 import * as authService from './auth.service';
 import { registerSchema, loginSchema } from './auth.schema';
 import { sendOTP } from '../../services/email.service';
 import { z } from 'zod';
+import { config } from '../../config/env';
+
+const cookieOptions: CookieOptions = {
+  httpOnly: true,
+  secure: config.isProduction, // true in production
+  sameSite: config.isProduction ? 'none' : 'lax', // none for cross-origin (if frontend/backend different domains), lax for dev
+  maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+};
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
-    return (req: Request, res: Response, next: (err: any) => void) => {
-        Promise.resolve(fn(req, res)).catch(next);
-    };
+  return (req: Request, res: Response, next: (err: any) => void) => {
+    Promise.resolve(fn(req, res)).catch(next);
+  };
 }
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
@@ -23,9 +31,21 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const login = asyncHandler(async (req: Request, res: Response) => {
-    const input = loginSchema.parse(req.body);
-    const result = await authService.login(input);
-    res.json(result);
+  const input = loginSchema.parse(req.body);
+  const result = await authService.login(input);
+
+  // Set cookie
+  res.cookie('token', result.token, cookieOptions);
+
+  res.json(result);
+});
+
+export const logout = asyncHandler(async (req: Request, res: Response) => {
+  res.clearCookie('token', {
+    ...cookieOptions,
+    maxAge: 0
+  });
+  res.json({ message: 'Logged out successfully' });
 });
 
 // ✅ NEW: Verify OTP endpoint
@@ -37,6 +57,10 @@ const verifyOTPSchema = z.object({
 export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
   const input = verifyOTPSchema.parse(req.body);
   const result = await authService.verifyEmailOTP(input.email, input.otp);
+
+  // Set cookie
+  res.cookie('token', result.token, cookieOptions);
+
   res.json(result);
 });
 
@@ -47,7 +71,7 @@ const resendOTPSchema = z.object({
 
 export const resendOTP = asyncHandler(async (req: Request, res: Response) => {
   const input = resendOTPSchema.parse(req.body);
-  
+
   // Get user by email to verify they exist
   const { prisma } = await import('../../config/prisma');
   const user = await prisma.users.findUnique({
@@ -66,7 +90,7 @@ export const resendOTP = asyncHandler(async (req: Request, res: Response) => {
 
   // Send new OTP
   await sendOTP(user.userEmail, user.userName);
-  
+
   res.json({ message: 'OTP sent successfully' });
 });
 
@@ -77,7 +101,7 @@ const requestPasswordChangeSchema = z.object({
 
 export const requestPasswordChange = asyncHandler(async (req: Request, res: Response) => {
   const input = requestPasswordChangeSchema.parse(req.body);
-  
+
   const { prisma } = await import('../../config/prisma');
   const user = await prisma.users.findUnique({
     where: { userEmail: input.email },
@@ -91,7 +115,7 @@ export const requestPasswordChange = asyncHandler(async (req: Request, res: Resp
   // Send password change OTP
   const { emailService } = await import('../../services/email.service');
   await emailService.sendPasswordChangeOTP(user.userEmail, user.userName);
-  
+
   res.json({ message: 'Password change OTP sent to your email' });
 });
 
@@ -104,11 +128,11 @@ const changePasswordSchema = z.object({
 
 export const changePassword = asyncHandler(async (req: Request, res: Response) => {
   const input = changePasswordSchema.parse(req.body);
-  
+
   // Verify OTP
   const { emailService } = await import('../../services/email.service');
   const otpResult = emailService.verifyOTP(input.email, input.otp);
-  
+
   if (!otpResult.valid) {
     res.status(400).json({ message: otpResult.message });
     return;

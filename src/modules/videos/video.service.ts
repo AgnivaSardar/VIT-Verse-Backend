@@ -99,11 +99,17 @@ export const videoService = {
     }
 
     // Enqueue transcode job
-    const jobPayload: TranscodeJobPayload = {
+    // For progress tracking, use vidID as uploadId and uploaderID as userId
+    const jobPayload: any = {
       vidID: video.vidID.toString(),
       filePath: storageType === 's3' ? s3Key! : filePath,
       originalName: fileName,
       storageType,
+      userId: uploaderID.toString(),
+      uploadId: video.vidID.toString(),
+      // For worker: inputPath/outputPath for ffmpeg
+      inputPath: storageType === 's3' ? s3Key! : filePath,
+      outputPath: undefined // Set by worker or add logic as needed
     };
     await jobRepository.createTranscodeJob(jobPayload);
 

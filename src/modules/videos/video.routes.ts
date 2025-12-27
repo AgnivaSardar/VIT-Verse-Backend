@@ -13,6 +13,7 @@ import {
   searchVideosByTitleHandler,
   deleteVideoHandler,
 } from './video.controller';
+import { getVideoUploadProgressHandler } from './video.progress.controller';
 import { requireAuth } from '../../middlewares/auth.middleware';
 import { cacheResponse } from '../../common/cache';
 
@@ -69,6 +70,8 @@ router.post(
   ]),
   uploadVideoHandler
 );
+// Secure progress polling endpoint
+router.get('/progress/:uploadId', requireAuth, getVideoUploadProgressHandler);
 router.get('/me', requireAuth, getMyVideosHandler);
 router.get('/search/title', cacheResponse(30, (req) => `videos:search:${req.query.q}`), searchVideosByTitleHandler);
 router.get('/', cacheResponse(30, (req) => `videos:list:${JSON.stringify(req.query)}`), listVideosHandler);

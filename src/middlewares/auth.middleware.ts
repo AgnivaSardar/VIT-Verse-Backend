@@ -14,12 +14,22 @@ export interface AuthRequest extends Request {
 }
 
 export function requireAuth(req: AuthRequest, _res: Response, next: NextFunction) {
+  let token: string | undefined;
+
+  // Check header
   const header = req.headers.authorization;
-  if (!header?.startsWith('Bearer ')) {
-    throw new AuthError('Missing token');
+  if (header?.startsWith('Bearer ')) {
+    token = header.slice('Bearer '.length);
   }
 
-  const token = header.slice('Bearer '.length);
+  // Check cookie if no header token
+  if (!token && req.cookies?.token) {
+    token = req.cookies.token;
+  }
+
+  if (!token) {
+    throw new AuthError('Missing token');
+  }
   try {
     const payload = jwt.verify(token, config.jwtSecret) as AuthUser;
     req.user = payload;
