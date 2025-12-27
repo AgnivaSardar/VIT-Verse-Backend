@@ -103,7 +103,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use('/api/', sanitizeMiddleware);
 
 // === HTTP PARAMETER POLLUTION PROTECTION ===
-app.use(hpp({}) as any);
+app.use(hpp({}));
 
 // === OPTIONAL: HMAC SIGNED REQUESTS ===
 if (process.env.REQUIRE_API_SIGNING === 'true') {
@@ -124,7 +124,11 @@ app.use('/uploads', express.static(uploadsPath, {
     const matchedOrigin = originHeader && allowedOrigins.includes(originHeader) ? originHeader : '*';
     res.set('Access-Control-Allow-Origin', matchedOrigin);
     res.set('Access-Control-Allow-Credentials', 'true');
+    res.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Range, Content-Type, Accept');
+    res.set('Access-Control-Expose-Headers', 'Content-Length, Content-Range, Accept-Ranges');
     res.set('Accept-Ranges', 'bytes');
+    res.set('Cache-Control', 'public, max-age=31536000');
     if (stat && stat.size) {
       res.set('Content-Length', stat.size.toString());
     }
@@ -147,8 +151,8 @@ if (process.env.NODE_ENV !== 'production') {
 
 // === HEALTH CHECK ===
 app.get('/health', (req: Request, res: Response) => {
-  res.status(200).json({ 
-    status: 'OK', 
+  res.status(200).json({
+    status: 'OK',
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
   });
@@ -157,7 +161,7 @@ app.get('/health', (req: Request, res: Response) => {
 // === CONNECTION TEST ENDPOINT ===
 app.get('/api/test-connection', (req: Request, res: Response) => {
   console.log('✅ Frontend connected successfully to backend!');
-  res.status(200).json({ 
+  res.status(200).json({
     message: 'Connection successful!',
     environment: process.env.NODE_ENV || 'development',
     storageType: process.env.STORAGE_TYPE || 'local',

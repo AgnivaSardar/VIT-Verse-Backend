@@ -1,3 +1,4 @@
+import { prisma } from "../../config/prisma";
 import { AppError } from "../../common/errors";
 import * as playlistRepo from "./playlist.repository";
 import { CreatePlaylistRequest, UpdatePlaylistRequest } from "./playlist.types";
@@ -41,10 +42,18 @@ export async function deletePlaylist(playlistID: bigint): Promise<void> {
 }
 
 export async function addVideoToPlaylist(playlistID: bigint, videoID: bigint) {
-  const playlist = await playlistRepo.getPlaylistByID(playlistID);
+  const [playlist, video] = await Promise.all([
+    playlistRepo.getPlaylistByID(playlistID),
+    prisma.video.findUnique({ where: { vidID: videoID } })
+  ]);
+
   if (!playlist) {
     throw new AppError("Playlist not found", 404);
   }
+  if (!video) {
+    throw new AppError("Video not found", 404);
+  }
+
   return await playlistRepo.addVideoToPlaylist(playlistID, videoID);
 }
 

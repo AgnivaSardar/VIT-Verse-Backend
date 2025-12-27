@@ -19,6 +19,7 @@ export async function getPlaylistByID(id: bigint) {
                   channelID: true,
                   channelName: true,
                   channelType: true,
+                  channelImage: true,
                   user: {
                     select: {
                       userID: true,
@@ -26,6 +27,11 @@ export async function getPlaylistByID(id: bigint) {
                     },
                   },
                 },
+              },
+              stats: {
+                select: {
+                  viewsCount: true,
+                }
               },
               images: {
                 select: {
@@ -46,6 +52,14 @@ export async function getPlaylistByID(id: bigint) {
           userID: true,
           userName: true,
           userEmail: true,
+          channels: {
+            select: {
+              channelID: true,
+              channelName: true,
+              channelImage: true,
+            },
+            take: 1,
+          },
         },
       },
     },
@@ -78,6 +92,14 @@ export async function getPlaylistsByUserID(userID: bigint) {
       user: {
         select: {
           userName: true,
+          channels: {
+            select: {
+              channelID: true,
+              channelName: true,
+              channelImage: true,
+            },
+            take: 1,
+          },
         },
       },
     },
@@ -128,45 +150,53 @@ export async function getAllPublicPlaylists() {
       user: {
         select: {
           userName: true,
+          channels: {
+            select: {
+              channelID: true,
+              channelName: true,
+              channelImage: true,
+            },
+            take: 1,
+          },
         },
       },
     },
     orderBy: { createdAt: 'desc' },
   });
 }
-  
+
 export async function createPlaylist(data: {
   userID: bigint;
   name: string;
-    description: string;
-    isPublic: boolean;
-    isPremium: boolean;
+  description: string;
+  isPublic: boolean;
+  isPremium: boolean;
 }) {
-    return prisma.playlist.create({
+  return prisma.playlist.create({
     data: {
       userID: data.userID,
       name: data.name,
-        description: data.description,
-        isPublic: data.isPublic,
-        isPremium: data.isPremium,
+      description: data.description,
+      isPublic: data.isPublic,
+      isPremium: data.isPremium,
     },
   });
 }
 
 export async function updatePlaylist(id: bigint, data: {
-    name?: string;
-    description?: string;
-    isPublic?: boolean;
-    isPremium?: boolean;
+  name?: string;
+  description?: string;
+  isPublic?: boolean;
+  isPremium?: boolean;
 }) {
-    return prisma.playlist.update({
+  return prisma.playlist.update({
     where: { pID: id },
     data: data,
   });
 }
 
 export async function deletePlaylist(id: bigint) {
-    return prisma.playlist.delete({
+  return prisma.playlist.delete({
     where: { pID: id },
   });
 }
@@ -177,7 +207,7 @@ export async function addVideoToPlaylist(playlistID: bigint, videoID: bigint) {
     orderBy: { position: 'desc' },
     select: { position: true },
   });
-  
+
   return prisma.playlistVideos.create({
     data: {
       pID: playlistID,

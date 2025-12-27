@@ -191,14 +191,19 @@ export async function getChannelStats(channelID: bigint) {
 
     const since = new Date();
     since.setMonth(since.getMonth() - 11);
+    since.setDate(1);
     since.setHours(0, 0, 0, 0);
 
-    const viewsRows = await prisma.views.findMany({
-        where: { watchedAt: { gte: since }, video: { channelID } },
+    // Get views for all videos in this channel
+    const viewsRows = videoIds.length > 0 ? await prisma.views.findMany({
+        where: {
+            vidID: { in: videoIds },
+            watchedAt: { gte: since }
+        },
         select: { watchedAt: true },
-    });
+    }) : [];
 
-    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const monthlyMap: Record<string, number> = {};
     for (let i = 0; i < 12; i++) {
         const d = new Date();
