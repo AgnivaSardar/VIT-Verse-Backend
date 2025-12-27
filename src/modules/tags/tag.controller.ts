@@ -39,6 +39,8 @@ export const addTagsToVideoHandler = async (req: Request, res: Response) => {
 
 export const getVideoTagsHandler = async (req: Request, res: Response) => {
   const videoID = BigInt(req.params.videoID);
-  const tags = await tagService.getVideoTags(videoID);
+  const videoTags = await tagService.getVideoTags(videoID);
+  // Extract just the tag objects from the VideoTag join table records
+  const tags = videoTags.map((vt: any) => vt.tag).filter(Boolean);
   res.json(toJSON(tags));
 };
