@@ -9,27 +9,27 @@ export async function getVideoStatsByID(id: bigint) {
 export async function createVideoStats(data: {
   vidID: bigint;
   viewsCount?: number;
-    likesCount?: number;
-    commentsCount?: number;
-    sharesCount?: number;
+  likesCount?: number;
+  commentsCount?: number;
+  sharesCount?: number;
 }) {
-    return prisma.videoStats.create({
+  return prisma.videoStats.create({
     data: {
       vidID: data.vidID,
       viewsCount: data.viewsCount ?? 0,
-        likesCount: data.likesCount ?? 0,
-        commentsCount: data.commentsCount ?? 0,
-        sharesCount: data.sharesCount ?? 0,
+      likesCount: data.likesCount ?? 0,
+      commentsCount: data.commentsCount ?? 0,
+      sharesCount: data.sharesCount ?? 0,
     },
   });
 }
 export async function updateVideoStats(id: bigint, data: {
-    viewsCount?: number;
-    likesCount?: number;
-    commentsCount?: number;
-    sharesCount?: number;
+  viewsCount?: number;
+  likesCount?: number;
+  commentsCount?: number;
+  sharesCount?: number;
 }) {
-    return prisma.videoStats.update({
+  return prisma.videoStats.update({
     where: { vidID: id },
     data: data,
   });
@@ -47,7 +47,7 @@ export async function listVideoStats(page: number, limit: number) {
     prisma.videoStats.count(),
     prisma.videoStats.findMany({
       skip: offset,
-        take: limit,
+      take: limit,
     }),
   ]);
   return {
@@ -58,7 +58,34 @@ export async function listVideoStats(page: number, limit: number) {
   };
 }
 
-export async function incrementViewsCount(vidID: bigint) {
+export async function incrementViewsCount(vidID: bigint, userID?: bigint, ipAddress?: string, userAgent?: string) {
+  // Check if view already exists
+  let existingView;
+  if (userID) {
+    existingView = await prisma.views.findFirst({
+      where: { vidID, userID },
+    });
+  } else if (ipAddress && userAgent) {
+    existingView = await prisma.views.findFirst({
+      where: { vidID, ipAddress, userAgent, userID: null },
+    });
+  }
+
+  if (existingView) {
+    return null; // Already viewed, do nothing
+  }
+
+  // Record the new view
+  await prisma.views.create({
+    data: {
+      vidID,
+      userID: userID || null,
+      ipAddress: ipAddress || null,
+      userAgent: userAgent || null,
+    },
+  });
+
+  // Increment the counter
   return prisma.videoStats.upsert({
     where: { vidID },
     update: {

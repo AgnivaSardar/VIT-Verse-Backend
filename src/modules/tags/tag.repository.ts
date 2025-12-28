@@ -35,7 +35,11 @@ export const tagRepository = {
 
   listPopular(limit = 20, offset = 0) {
     return prisma.tag.findMany({
-      orderBy: { usageCount: 'desc' },
+      orderBy: {
+        videos: {
+          _count: 'desc',
+        },
+      },
       take: limit,
       skip: offset,
       include: {

@@ -6,6 +6,12 @@ export async function getChannelByID(id: bigint) {
   });
 }
 
+export async function getChannelByPublicID(publicID: string) {
+  return prisma.channel.findUnique({
+    where: { publicID },
+  });
+}
+
 export async function getChannelByNameAndUser(channelName: string, userID: bigint) {
   return prisma.channel.findFirst({
     where: { channelName: channelName, userID: userID },
@@ -21,14 +27,16 @@ export async function getChannelByUserID(userID: bigint) {
 export async function createChannel(data: {
   userID: bigint;
   channelName: string;
-    channelDescription: string;
-    channelType: 'public' | 'private' | 'protected';
-    channelSubscribers: bigint[];
-    isPremium: boolean;
-    channelImage?: string;
+  channelDescription: string;
+  channelType: 'public' | 'private' | 'protected';
+  channelSubscribers: bigint[];
+  isPremium: boolean;
+  channelImage?: string;
 }) {
+  const { generateChannelID } = require('../../utils/id.utils');
   return prisma.channel.create({
     data: {
+      publicID: generateChannelID(),
       userID: data.userID,
       channelName: data.channelName,
       channelDescription: data.channelDescription,
@@ -41,12 +49,12 @@ export async function createChannel(data: {
 }
 
 export async function updateChannel(id: bigint, data: {
-    channelName?: string;
-    channelDescription?: string;
-    channelType?: 'public' | 'private' | 'protected';
-    channelSubscribers?: bigint; // Change to single bigint
-    isPremium?: boolean;
-    channelImage?: string;
+  channelName?: string;
+  channelDescription?: string;
+  channelType?: 'public' | 'private' | 'protected';
+  channelSubscribers?: bigint; // Change to single bigint
+  isPremium?: boolean;
+  channelImage?: string;
 }) {
   return prisma.channel.update({
     where: { channelID: id },

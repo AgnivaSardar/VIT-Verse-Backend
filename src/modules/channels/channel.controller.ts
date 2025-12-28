@@ -4,6 +4,7 @@ import { CreateChannelRequest, UpdateChannelRequest } from "./channel.types";
 import { toJSON } from "../../common/utils";
 import { uploadToS3, isS3Configured } from "../../config/s3";
 import crypto from "crypto";
+import { AppError } from "../../common/errors"; // Added AppError import
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
   return (req: Request, res: Response, next: (err: any) => void) => {
@@ -14,16 +15,16 @@ function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
 export const createChannel = asyncHandler(async (req: Request, res: Response) => {
   const userID = BigInt(String(req.user!.id));
   const logoFile = (req as any).file;
-  
+
   let channelImageUrl: string | undefined;
-  
+
   // Upload logo to S3 if provided
   if (logoFile && isS3Configured()) {
     const timestamp = Date.now();
     const randomHash = crypto.randomBytes(8).toString('hex');
     const ext = logoFile.originalname.split('.').pop();
     const s3Key = `channel-logos/${userID}/${timestamp}-${randomHash}.${ext}`;
-    
+
     channelImageUrl = await uploadToS3({
       key: s3Key,
       body: logoFile.buffer,
@@ -41,7 +42,7 @@ export const createChannel = asyncHandler(async (req: Request, res: Response) =>
     // Fallback to local storage path (shouldn't happen with STORAGE_TYPE=s3)
     channelImageUrl = `uploads/channel-logos/${logoFile.originalname}`;
   }
-  
+
   const input: CreateChannelRequest = {
     ...req.body,
     userID,
@@ -54,8 +55,20 @@ export const createChannel = asyncHandler(async (req: Request, res: Response) =>
 );
 
 export const getChannel = asyncHandler(async (req: Request, res: Response) => {
-  const channelID = BigInt(req.params.channelID);
-  const channel = await channelService.getChannelByID(channelID);
+  const idParam = req.params.channelID;
+  let channel;
+
+  // Try finding by publicID first
+  channel = await channelService.getChannelByPublicID(idParam);
+
+  // Fallback to numeric ID for legacy support
+  if (!channel && /^\d+$/.test(idParam)) {
+    channel = await channelService.getChannelByID(BigInt(idParam));
+  }
+
+  if (!channel) {
+    throw new AppError('Channel not found', 404);
+  }
   res.json(toJSON(channel));
 });
 
@@ -72,16 +85,16 @@ export const updateChannel = asyncHandler(async (req: Request, res: Response) =>
   const channelID = BigInt(req.params.channelID);
   const userID = BigInt(String(req.user!.id));
   const logoFile = (req as any).file;
-  
+
   let channelImageUrl: string | undefined;
-  
+
   // Upload new logo to S3 if provided
   if (logoFile && isS3Configured()) {
     const timestamp = Date.now();
     const randomHash = crypto.randomBytes(8).toString('hex');
     const ext = logoFile.originalname.split('.').pop();
     const s3Key = `channel-logos/${userID}/${timestamp}-${randomHash}.${ext}`;
-    
+
     channelImageUrl = await uploadToS3({
       key: s3Key,
       body: logoFile.buffer,
@@ -98,7 +111,7 @@ export const updateChannel = asyncHandler(async (req: Request, res: Response) =>
   } else if (logoFile) {
     channelImageUrl = `uploads/channel-logos/${logoFile.originalname}`;
   }
-  
+
   const input: UpdateChannelRequest = {
     ...req.body,
     channelImage: channelImageUrl,
@@ -116,21 +129,21 @@ export const listChannels = asyncHandler(async (req: Request, res: Response) => 
   const result = await channelService.listChannelsService(page, limit);
   res.json(toJSON(result));
 }
-);  
+);
 
 export const subscribeToChannel = asyncHandler(async (req: Request, res: Response) => {
   const channelID = BigInt(req.params.channelID);
   const userID = BigInt(req.body.userID);
-    await channelService.subscribeToChannelService(channelID, userID);
-    res.json({ message: "Subscribed to channel successfully" });
+  await channelService.subscribeToChannelService(channelID, userID);
+  res.json({ message: "Subscribed to channel successfully" });
 }
 );
 
 export const unsubscribeFromChannel = asyncHandler(async (req: Request, res: Response) => {
   const channelID = BigInt(req.params.channelID);
   const userID = BigInt(req.body.userID);
-    await channelService.unsubscribeFromChannelService(channelID, userID);
-    res.json({ message: "Unsubscribed from channel successfully" });
+  await channelService.unsubscribeFromChannelService(channelID, userID);
+  res.json({ message: "Unsubscribed from channel successfully" });
 }
 
 );
@@ -154,9 +167,23 @@ export const getMyChannel = asyncHandler(async (req: Request, res: Response) => 
 });
 
 export const getChannelStats = asyncHandler(async (req: Request, res: Response) => {
-  const channelID = BigInt(req.params.channelID);
+  const idParam = req.params.channelID;
+  let channel;
+
+  // Try finding by publicID first
+  channel = await channelService.getChannelByPublicID(idParam);
+
+  // Fallback to numeric ID for legacy support
+  if (!channel && /^\d+$/.test(idParam)) {
+    channel = await channelService.getChannelByID(BigInt(idParam));
+  }
+
+  if (!channel) {
+    throw new AppError('Channel not found', 404);
+  }
+
+  const channelID = channel.channelID;
   // Only allow owner to see full statistics
-  const channel = await channelService.getChannelByID(channelID);
   const requesterID = req.user?.id ? BigInt(String(req.user!.id)) : null;
   if (!requesterID || BigInt(channel.userID) !== requesterID) {
     res.status(403).json({ message: 'Forbidden: statistics are only available to the channel owner' });

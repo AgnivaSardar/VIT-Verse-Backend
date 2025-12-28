@@ -39,4 +39,29 @@ export function requireAuth(req: AuthRequest, _res: Response, next: NextFunction
   }
 }
 
+export function optionalAuth(req: AuthRequest, _res: Response, next: NextFunction) {
+  let token: string | undefined;
+
+  const header = req.headers.authorization;
+  if (header?.startsWith('Bearer ')) {
+    token = header.slice('Bearer '.length);
+  }
+
+  if (!token && req.cookies?.token) {
+    token = req.cookies.token;
+  }
+
+  if (!token) {
+    return next();
+  }
+
+  try {
+    const payload = jwt.verify(token, config.jwtSecret) as AuthUser;
+    req.user = payload;
+  } catch {
+    // ignore invalid token for optional auth
+  }
+  next();
+}
+
 export const authMiddleware = requireAuth;

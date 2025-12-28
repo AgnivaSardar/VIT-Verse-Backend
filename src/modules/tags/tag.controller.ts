@@ -1,7 +1,9 @@
 // src/modules/tags/tag.controller.ts
 import type { Request, Response } from 'express';
 import { tagService } from './tag.service';
+import { videoService } from '../videos/video.service';
 import { toJSON } from '../../common/utils';
+import { AppError } from '../../common/errors';
 
 export const createTagHandler = async (req: Request, res: Response) => {
   const data = req.body;
@@ -31,14 +33,16 @@ export const searchTagsHandler = async (req: Request, res: Response) => {
 };
 
 export const addTagsToVideoHandler = async (req: Request, res: Response) => {
-  const videoID = BigInt(req.params.videoID);
+  const videoID = await videoService.resolveVideoID(req.params.videoID);
+  if (!videoID) throw new AppError("Video not found", 404);
   const tagNames = (req.body.tags as string[]) || [];
   const tags = await tagService.addTagToVideo(videoID, tagNames);
   res.json(toJSON({ message: 'Tags added', tags }));
 };
 
 export const getVideoTagsHandler = async (req: Request, res: Response) => {
-  const videoID = BigInt(req.params.videoID);
+  const videoID = await videoService.resolveVideoID(req.params.videoID);
+  if (!videoID) throw new AppError("Video not found", 404);
   const videoTags = await tagService.getVideoTags(videoID);
   // Extract just the tag objects from the VideoTag join table records
   const tags = videoTags.map((vt: any) => vt.tag).filter(Boolean);

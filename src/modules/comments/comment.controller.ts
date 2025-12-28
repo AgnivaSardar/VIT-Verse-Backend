@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
 import * as CommentService from "./comment.service";
+import { videoService } from "../videos/video.service";
 import { CreateCommentRequest, UpdateCommentRequest } from "./comment.types";
 import { toJSON } from "../../common/utils";
+import { AppError } from "../../common/errors";
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
     return (req: Request, res: Response, next: (err: any) => void) => {
@@ -11,6 +13,16 @@ function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
 
 export const createComment = asyncHandler(async (req: Request, res: Response) => {
     const input: CreateCommentRequest = req.body;
+
+    // Resolve vidID robustly (it could be a number, numeric string, or public ID string)
+    const rawVidID = String(input.vidID);
+    const resolvedVidID = await videoService.resolveVideoID(rawVidID);
+    if (!resolvedVidID) throw new AppError("Video not found", 404);
+    input.vidID = resolvedVidID;
+
+    // Resolve userID (ensure it's BigInt)
+    input.userID = BigInt(input.userID);
+
     const created = await CommentService.createComment(input);
     res.status(201).json(toJSON(created));
 });
@@ -35,7 +47,7 @@ export const deleteComment = asyncHandler(async (req: Request, res: Response) =>
 }
 );
 
-export const CommentController ={
+export const CommentController = {
     createComment,
     getComment,
     updateComment,
@@ -43,7 +55,8 @@ export const CommentController ={
 }
 
 export const listCommentsByVideo = asyncHandler(async (req: Request, res: Response) => {
-    const vidID = BigInt(req.params.vidID);
+    const vidID = await videoService.resolveVideoID(req.params.vidID);
+    if (!vidID) throw new AppError("Video not found", 404);
     const list = await CommentService.listCommentsByVideoID(vidID);
     res.json(toJSON(list));
 });

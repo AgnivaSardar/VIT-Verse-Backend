@@ -9,10 +9,31 @@ export async function createPlaylist(data: CreatePlaylistRequest) {
 
 export async function getPlaylistByID(playlistID: bigint) {
   const playlist = await playlistRepo.getPlaylistByID(playlistID);
-  if (!playlist) {
-    throw new AppError("Playlist not found", 404);
+  return playlist ? attachThumbnail(playlist) : null;
+}
+
+export async function getPlaylistByPublicID(publicID: string) {
+  const playlist = await playlistRepo.getPlaylistByPublicID(publicID);
+  return playlist ? attachThumbnail(playlist) : null;
+}
+
+export async function resolvePlaylistID(idOrPublicID: string): Promise<bigint | null> {
+  // 1. Try public ID first
+  const playlist = await playlistRepo.getPlaylistByPublicID(idOrPublicID);
+  if (playlist) return playlist.pID;
+
+  // 2. Fallback to numeric ID if it looks like one
+  if (/^\d+$/.test(idOrPublicID)) {
+    try {
+      const pID = BigInt(idOrPublicID);
+      const exists = await playlistRepo.getPlaylistByID(pID);
+      if (exists) return exists.pID;
+    } catch (_err) {
+      return null;
+    }
   }
-  return attachThumbnail(playlist);
+
+  return null;
 }
 
 export async function getPlaylistsByUserID(userID: bigint) {

@@ -1,6 +1,7 @@
 import { prisma } from "../../config/prisma";
 
 export async function getPlaylistByID(id: bigint) {
+  // Original implementation kept for internal use
   return prisma.playlist.findUnique({
     where: { pID: id },
     include: {
@@ -9,6 +10,7 @@ export async function getPlaylistByID(id: bigint) {
           video: {
             select: {
               vidID: true,
+              publicID: true,
               title: true,
               description: true,
               duration: true,
@@ -17,6 +19,7 @@ export async function getPlaylistByID(id: bigint) {
               channel: {
                 select: {
                   channelID: true,
+                  publicID: true,
                   channelName: true,
                   channelType: true,
                   channelImage: true,
@@ -55,6 +58,76 @@ export async function getPlaylistByID(id: bigint) {
           channels: {
             select: {
               channelID: true,
+              publicID: true,
+              channelName: true,
+              channelImage: true,
+            },
+            take: 1,
+          },
+        },
+      },
+    },
+  });
+}
+
+export async function getPlaylistByPublicID(publicID: string) {
+  return prisma.playlist.findUnique({
+    where: { publicID },
+    include: {
+      videos: {
+        include: {
+          video: {
+            select: {
+              vidID: true,
+              publicID: true,
+              title: true,
+              description: true,
+              duration: true,
+              createdAt: true,
+              cloudflarePlaybackURL: true,
+              channel: {
+                select: {
+                  channelID: true,
+                  publicID: true,
+                  channelName: true,
+                  channelType: true,
+                  channelImage: true,
+                  user: {
+                    select: {
+                      userID: true,
+                      userName: true,
+                    },
+                  },
+                },
+              },
+              stats: {
+                select: {
+                  viewsCount: true,
+                }
+              },
+              images: {
+                select: {
+                  imgURL: true,
+                },
+                where: {
+                  isPrimary: true,
+                },
+                take: 1,
+              },
+            },
+          },
+        },
+        orderBy: { position: 'asc' },
+      },
+      user: {
+        select: {
+          userID: true,
+          userName: true,
+          userEmail: true,
+          channels: {
+            select: {
+              channelID: true,
+              publicID: true,
               channelName: true,
               channelImage: true,
             },
@@ -172,8 +245,10 @@ export async function createPlaylist(data: {
   isPublic: boolean;
   isPremium: boolean;
 }) {
+  const { generatePlaylistID } = require('../../utils/id.utils');
   return prisma.playlist.create({
     data: {
+      publicID: generatePlaylistID(),
       userID: data.userID,
       name: data.name,
       description: data.description,

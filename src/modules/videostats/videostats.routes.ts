@@ -1,13 +1,13 @@
 import { Router } from "express";
 import { VideoStatsController } from "./videostats.controller";
-import { requireAuth } from "../../middlewares/auth.middleware";
+import { requireAuth, optionalAuth } from "../../middlewares/auth.middleware";
 
 const router = Router();
 const videoStatsController = VideoStatsController;
 
 router.get("/:vidID", videoStatsController.getVideoStats);
 router.get("/", videoStatsController.listVideoStats);
-router.post("/:vidID/increment-views", videoStatsController.incrementViewsCount);
+router.post("/:vidID/increment-views", optionalAuth as any, videoStatsController.incrementViewsCount);
 router.post("/:vidID/increment-likes", requireAuth, videoStatsController.incrementLikesCount);
 router.post("/:vidID/decrement-likes", requireAuth, videoStatsController.decrementLikesCount);
 router.post("/:vidID/increment-comments", requireAuth, videoStatsController.incrementCommentsCount);

@@ -11,15 +11,27 @@ import path from 'path';
 import { compressAndScaleVideo } from './video.compress';
 import { videoCompressionConfig } from '../../config/videoCompression';
 
+// Video handlers moved/merged during implementation
+
 export const deleteVideoHandler = async (req: Request, res: Response) => {
   try {
-    const vidID = BigInt(req.params.id);
-    const userID = BigInt(String(req.user!.id));
+    const idParam = req.params.id;
+    let video;
 
-    const video = await videoService.getVideoById(vidID);
+    // Try finding by publicID first
+    video = await videoService.getVideoByPublicId(idParam);
+
+    // Fallback to numeric ID for legacy support
+    if (!video && /^\d+$/.test(idParam)) {
+      video = await videoService.getVideoById(BigInt(idParam));
+    }
+
     if (!video) {
       throw new AppError('Video not found', 404);
     }
+
+    const vidID = video.vidID;
+    const userID = BigInt(String(req.user!.id));
 
     const ownerID = video.channel?.userID;
     if (!ownerID || BigInt(ownerID) !== userID) {
@@ -47,7 +59,7 @@ const ensureAbsoluteUrl = (url: string, baseUrl: string) => {
 const decorateVideoMedia = (video: any, baseUrl: string) => {
   // Detect if video is on S3 (check if s3Bucket is set or key starts with videos/)
   const isS3Video = video.s3Bucket || (video.s3KeyOriginal && video.s3KeyOriginal.startsWith('videos/'));
-  
+
   // Handle S3/CloudFront playback URLs
   if (isS3Video && video.s3KeyOriginal) {
     video.playbackURL = getS3PublicUrl(video.s3KeyOriginal);
@@ -162,7 +174,7 @@ export const uploadVideoHandler = async (req: Request, res: Response) => {
       processedFileSize = file.size;
       processedMimeType = file.mimetype;
     }
-    
+
     // Check if user has a channel
     const userChannel = await channelService.getUserChannel(uploaderID);
     if (!userChannel) {
@@ -203,17 +215,17 @@ export const uploadVideoHandler = async (req: Request, res: Response) => {
 
     // Post-process: compute duration & generate thumbnail if missing
     const storageMode: 'local' | 's3' = process.env.STORAGE_TYPE === 's3' ? 's3' : 'local';
-    
+
     let videoFilePath = file.path; // Local path for processing
     let shouldCleanupTempFile = false;
-    
+
     // If video is on S3, download it temporarily for processing
     if (storageType === 's3' && video.s3KeyOriginal) {
       try {
         console.log('📥 Downloading video from S3 for processing...');
         const { downloadFromS3 } = await import('../../config/s3');
         const videoBuffer = await downloadFromS3(video.s3KeyOriginal);
-        
+
         // Save to temp location
         const tempDir = path.join(process.cwd(), 'uploads', 'temp');
         if (!fs.existsSync(tempDir)) {
@@ -229,7 +241,7 @@ export const uploadVideoHandler = async (req: Request, res: Response) => {
         videoFilePath = '';
       }
     }
-    
+
     if (videoFilePath && fs.existsSync(videoFilePath)) {
       // Duration
       const duration = await videoService.computeDurationSeconds(videoFilePath);
@@ -321,12 +333,21 @@ export const uploadVideoHandler = async (req: Request, res: Response) => {
 
 export const getVideoHandler = async (req: Request, res: Response) => {
   try {
-    const vidID = BigInt(req.params.id);
-    const video = await videoService.getVideoById(vidID);
+    const idParam = req.params.id;
+    let video;
+
+    // Try finding by publicID first
+    video = await videoService.getVideoByPublicId(idParam);
+
+    // Fallback to numeric ID for legacy support
+    if (!video && /^\d+$/.test(idParam)) {
+      video = await videoService.getVideoById(BigInt(idParam));
+    }
+
     if (!video) {
       throw new AppError('Video not found', 404);
     }
-    
+
     const baseUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
     const videoData = decorateVideoMedia(video as any, baseUrl);
     res.json(toJSON(videoData));
@@ -350,7 +371,7 @@ export const listVideosHandler = async (req: Request, res: Response) => {
       limit: limit ? Number(limit) : undefined,
       status: status as string,
     });
-    
+
     const baseUrl = process.env.BACKEND_URL || process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
     const videosWithUrls = videos.map((video: any) => decorateVideoMedia(video, baseUrl));
     res.json(toJSON(videosWithUrls));
@@ -377,7 +398,7 @@ export const searchVideosByTitleHandler = async (req: Request, res: Response) =>
     }
 
     const videos = await videoService.searchByTitle(query, maxLimit);
-    
+
     // Generate playback URLs and absolute thumbnails for local development
     const baseUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
     const videosWithUrls = videos.map((video: any) => decorateVideoMedia(video, baseUrl));
@@ -391,7 +412,22 @@ export const searchVideosByTitleHandler = async (req: Request, res: Response) =>
 
 export const updateVideoHandler = async (req: Request, res: Response) => {
   try {
-    const vidID = BigInt(req.params.id);
+    const idParam = req.params.id;
+    let video_initial;
+
+    // Try finding by publicID first
+    video_initial = await videoService.getVideoByPublicId(idParam);
+
+    // Fallback to numeric ID for legacy support
+    if (!video_initial && /^\d+$/.test(idParam)) {
+      video_initial = await videoService.getVideoById(BigInt(idParam));
+    }
+
+    if (!video_initial) {
+      throw new AppError('Video not found', 404);
+    }
+
+    const vidID = video_initial.vidID;
     let update: any = {};
 
     // If multipart/form-data, fields may be in req.body as strings
@@ -467,17 +503,25 @@ export const getMyVideosHandler = async (req: Request, res: Response) => {
 
 export const getVideoStreamUrlHandler = async (req: Request, res: Response) => {
   try {
-    const vidID = BigInt(req.params.id);
-    const video = await videoService.getVideoById(vidID);
-    
+    const idParam = req.params.id;
+    let video;
+
+    // Try finding by publicID first
+    video = await videoService.getVideoByPublicId(idParam);
+
+    // Fallback to numeric ID for legacy support
+    if (!video && /^\d+$/.test(idParam)) {
+      video = await videoService.getVideoById(BigInt(idParam));
+    }
+
     if (!video) {
       throw new AppError('Video not found', 404);
     }
 
     // Generate presigned URL for S3 videos
     const streamUrl = await videoService.getVideoStreamUrl(video);
-    
-    res.json({ 
+
+    res.json({
       streamUrl,
       expiresIn: 3600, // 1 hour
     });

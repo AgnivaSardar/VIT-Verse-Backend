@@ -1,8 +1,10 @@
-import { Request,Response } from "express";
+import { Request, Response } from "express";
 import * as playlistService from "./playlist.service";
+import { videoService } from "../videos/video.service";
 import { CreatePlaylistRequest, UpdatePlaylistRequest } from "./playlist.types";
 import { toJSON } from "../../common/utils";
 import { AuthRequest } from "../../middlewares/auth.middleware";
+import { AppError } from "../../common/errors";
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
     return (req: Request, res: Response, next: (err: any) => void) => {
@@ -24,8 +26,20 @@ export const createPlaylist = asyncHandler(async (req: AuthRequest, res: Respons
 });
 
 export const getPlaylist = asyncHandler(async (req: Request, res: Response) => {
-    const playlistID = BigInt(req.params.playlistID);
-    const playlist = await playlistService.getPlaylistByID(playlistID);
+    const idParam = req.params.playlistID;
+    let playlist;
+
+    // Try finding by publicID first
+    playlist = await playlistService.getPlaylistByPublicID(idParam);
+
+    // Fallback to numeric ID for legacy support
+    if (!playlist && /^\d+$/.test(idParam)) {
+        playlist = await playlistService.getPlaylistByID(BigInt(idParam));
+    }
+
+    if (!playlist) {
+        throw new AppError("Playlist not found", 404);
+    }
     res.json(toJSON(playlist));
 });
 
@@ -41,28 +55,63 @@ export const getAllPublicPlaylists = asyncHandler(async (req: Request, res: Resp
 });
 
 export const updatePlaylist = asyncHandler(async (req: Request, res: Response) => {
-    const playlistID = BigInt(req.params.playlistID);
+    const idParam = req.params.playlistID;
+    let playlist;
+
+    // Try finding by publicID first
+    playlist = await playlistService.getPlaylistByPublicID(idParam);
+
+    // Fallback to numeric ID for legacy support
+    if (!playlist && /^\d+$/.test(idParam)) {
+        playlist = await playlistService.getPlaylistByID(BigInt(idParam));
+    }
+
+    if (!playlist) {
+        throw new AppError("Playlist not found", 404);
+    }
+
     const input: UpdatePlaylistRequest = req.body;
-    await playlistService.updatePlaylist(playlistID, input);
+    await playlistService.updatePlaylist(playlist.pID, input);
     res.json({ message: "Playlist updated successfully" });
 });
 
 export const deletePlaylist = asyncHandler(async (req: Request, res: Response) => {
-    const playlistID = BigInt(req.params.playlistID);
-    await playlistService.deletePlaylist(playlistID);
+    const idParam = req.params.playlistID;
+    let playlist;
+
+    // Try finding by publicID first
+    playlist = await playlistService.getPlaylistByPublicID(idParam);
+
+    // Fallback to numeric ID for legacy support
+    if (!playlist && /^\d+$/.test(idParam)) {
+        playlist = await playlistService.getPlaylistByID(BigInt(idParam));
+    }
+
+    if (!playlist) {
+        throw new AppError("Playlist not found", 404);
+    }
+
+    await playlistService.deletePlaylist(playlist.pID);
     res.json({ message: "Playlist deleted successfully" });
 });
 
 export const addVideoToPlaylist = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const playlistID = BigInt(req.params.playlistID);
     const { videoID } = req.body;
-    
+
     if (!videoID) {
         res.status(400).json({ message: "videoID is required" });
         return;
     }
-    
-    await playlistService.addVideoToPlaylist(playlistID, BigInt(videoID));
+
+    // Resolve playlistID from params robustly
+    const resolvedPlaylistID = await playlistService.resolvePlaylistID(String(req.params.playlistID));
+    if (!resolvedPlaylistID) throw new AppError("Playlist not found", 404);
+
+    // Resolve videoID from body robustly
+    const resolvedVideoID = await videoService.resolveVideoID(String(videoID));
+    if (!resolvedVideoID) throw new AppError("Video not found", 404);
+
+    await playlistService.addVideoToPlaylist(resolvedPlaylistID, resolvedVideoID);
     res.status(201).json({ message: "Video added to playlist" });
 });
 

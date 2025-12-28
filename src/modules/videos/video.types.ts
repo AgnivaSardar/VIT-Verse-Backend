@@ -14,6 +14,7 @@ export interface UpdateVideoInput {
   title?: string;
   description?: string;
   visibility?: Visibility;
+  tags?: string[];
 }
 
 export interface TranscodeJobPayload {

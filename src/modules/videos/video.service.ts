@@ -84,13 +84,13 @@ export const videoService = {
       processingStatus: 'UPLOADED',
       ...(storageType === 'local'
         ? {
-            s3Bucket: null,
-            s3KeyOriginal: filePath,
-          }
+          s3Bucket: null,
+          s3KeyOriginal: filePath,
+        }
         : {
-            s3Bucket,
-            s3KeyOriginal: s3Key,
-          }),
+          s3Bucket,
+          s3KeyOriginal: s3Key,
+        }),
     });
 
     // Add tags if provided
@@ -124,6 +124,29 @@ export const videoService = {
     return videoRepository.findById(vidID, true);
   },
 
+  async getVideoByPublicId(publicID: string) {
+    return videoRepository.findByPublicId(publicID, true);
+  },
+
+  async resolveVideoID(idOrPublicID: string): Promise<bigint | null> {
+    // 1. Try public ID first
+    const video = await videoRepository.findByPublicId(idOrPublicID);
+    if (video) return video.vidID;
+
+    // 2. Fallback to numeric ID if it looks like one
+    if (/^\d+$/.test(idOrPublicID)) {
+      try {
+        const vidID = BigInt(idOrPublicID);
+        const exists = await videoRepository.findById(vidID);
+        if (exists) return exists.vidID;
+      } catch (_err) {
+        return null;
+      }
+    }
+
+    return null;
+  },
+
   async deleteVideo(vidID: bigint) {
     return videoRepository.delete(vidID);
   },
@@ -149,10 +172,11 @@ export const videoService = {
   },
 
   async updateVideo(vidID: bigint, data: UpdateVideoInput) {
-    const video = await videoRepository.update(vidID, data as Prisma.VideoUpdateInput);
+    const { tags, ...rest } = data;
+    const video = await videoRepository.update(vidID, rest as Prisma.VideoUpdateInput);
     // Update tags if present
-    if (data.tags && Array.isArray(data.tags) && data.tags.length > 0) {
-      await tagService.addTagToVideo(vidID, data.tags);
+    if (tags && Array.isArray(tags) && tags.length > 0) {
+      await tagService.addTagToVideo(vidID, tags);
     }
     return videoRepository.findById(vidID, true);
   },
@@ -239,13 +263,13 @@ export const videoService = {
       console.warn('S3 not configured, skipping thumbnail upload');
       return null;
     }
-    
+
     try {
       const buffer = fs.readFileSync(localPath);
       const timestamp = Date.now();
       const randomHash = crypto.randomBytes(8).toString('hex');
       const s3Key = `thumbnails/${uploaderID}/${vidID}-${timestamp}-${randomHash}.jpg`;
-      
+
       const publicUrl = await uploadToS3({
         key: s3Key,
         body: buffer,
@@ -259,10 +283,10 @@ export const videoService = {
         contentType: 'image/jpeg',
         isPublic: true,
       });
-      
+
       // Clean up local file after upload
       try { fs.unlinkSync(localPath); } catch (_e) { /* ignore */ }
-      
+
       console.log(`✅ Thumbnail uploaded to S3: ${publicUrl}`);
       return publicUrl;
     } catch (error: any) {
@@ -276,7 +300,7 @@ export const videoService = {
       // Extract S3 key if URL is from S3/CloudFront
       let s3Key: string | null = null;
       let s3Bucket: string | null = null;
-      
+
       if (imgURL.startsWith('thumbnails/')) {
         // Direct S3 key path
         s3Key = imgURL;
@@ -290,7 +314,7 @@ export const videoService = {
           s3Bucket = process.env.S3_BUCKET_NAME || null;
         }
       }
-      
+
       await imageRepo.createImage({
         vidID,
         imgURL,
@@ -309,7 +333,7 @@ export const videoService = {
       const { getSignedDownloadUrl } = await import('../../config/s3');
       return getSignedDownloadUrl(video.s3KeyOriginal, 3600); // 1 hour expiry
     }
-    
+
     // For local storage, return direct path (handled by static file server)
     return video.s3KeyOriginal || '';
   },

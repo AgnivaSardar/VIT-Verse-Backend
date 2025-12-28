@@ -25,11 +25,11 @@ export async function createChannel(data: CreateChannelRequest): Promise<void> {
 }
 
 export async function getChannelByID(channelID: bigint) {
-    const channel = await channelRepo.getChannelByID(channelID);
-    if (!channel) {
-        throw new AppError('Channel not found', 404);
-    }
-    return channel;
+    return await channelRepo.getChannelByID(channelID);
+}
+
+export async function getChannelByPublicID(publicID: string) {
+    return await channelRepo.getChannelByPublicID(publicID);
 }
 
 export async function deleteChannel(channelID: bigint, userID: bigint): Promise<void> {
@@ -233,6 +233,7 @@ export async function getChannelStats(channelID: bigint) {
 export const channelService = {
     createChannel,
     getChannelByID,
+    getChannelByPublicID,
     deleteChannel,
     createChannelService,
     getChannelService,

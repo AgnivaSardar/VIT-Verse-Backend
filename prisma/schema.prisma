@@ -58,6 +58,7 @@ model Teacher {
 
 model Channel {
   channelID          BigInt   @id @default(autoincrement())
+  publicID           String   @unique @default(dbgenerated("gen_random_uuid()")) // Temporary default for migration
   userID             BigInt
   channelName        String
   channelDescription  String
@@ -74,6 +75,7 @@ model Channel {
   subscriptions Subscription[]
 
   @@index([userID])
+  @@index([publicID])
   @@index([isAvailableToPublic])
   @@index([createdAt(sort: Desc)])
   @@index([channelName])
@@ -93,6 +95,7 @@ model Subscription {
 
 model Video {
   vidID       BigInt   @id @default(autoincrement())
+  publicID    String   @unique @default(dbgenerated("gen_random_uuid()")) // Temporary default for migration
   channelID   BigInt
   title       String
   description String?
@@ -123,6 +126,7 @@ model Video {
   reports    Reports[]
 
   @@index([channelID])
+  @@index([publicID])
   @@index([visibility])
   @@index([isAvailableToPublic])
   @@index([createdAt(sort: Desc)])
@@ -172,6 +176,7 @@ model Likes {
 
 model Playlist {
   pID        BigInt   @id @default(autoincrement())
+  publicID   String   @unique @default(dbgenerated("gen_random_uuid()")) // Temporary default for migration
   userID     BigInt
   name       String
   description String?
@@ -183,6 +188,8 @@ model Playlist {
 
   user    Users           @relation(fields: [userID], references: [userID], onDelete: Cascade)
   videos  PlaylistVideos[]
+
+  @@index([publicID])
 }
 
 model PlaylistVideos {

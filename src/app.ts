@@ -136,18 +136,9 @@ app.use('/uploads', express.static(uploadsPath, {
 }));
 console.log('📁 Serving uploads from:', uploadsPath);
 
-// === LOGGING ===
-if (process.env.NODE_ENV !== 'test') {
-  app.use(morgan('combined'));
-}
-
-// === REQUEST LOGGER (Development) ===
-if (process.env.NODE_ENV !== 'production') {
-  app.use('/api', (req: Request, _res: Response, next: NextFunction) => {
-    console.log(`📥 [${req.method}] ${req.originalUrl} from ${req.headers.origin || 'unknown'}`);
-    next();
-  });
-}
+// === LOGGING & TIMING ===
+import { requestLogger } from './middlewares/requestLogger.middleware';
+app.use(requestLogger);
 
 // === HEALTH CHECK ===
 app.get('/health', (req: Request, res: Response) => {

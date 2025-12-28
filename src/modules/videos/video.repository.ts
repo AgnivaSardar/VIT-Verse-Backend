@@ -4,7 +4,37 @@ import type { Prisma } from '@prisma/client';
 
 export const videoRepository = {
   create(data: Prisma.VideoCreateInput) {
+    if (!data.publicID) {
+      const { generateVideoID } = require('../../utils/id.utils');
+      data.publicID = generateVideoID();
+    }
     return prisma.video.create({ data });
+  },
+
+  findByPublicId(publicID: string, includeTags = false) {
+    const include = {
+      images: {
+        where: { isPrimary: true },
+        take: 1,
+      },
+      channel: true,
+      stats: true,
+    };
+
+    if (includeTags) {
+      (include as any).videoTags = {
+        include: {
+          tag: {
+            select: { id: true, name: true, color: true },
+          },
+        },
+      };
+    }
+
+    return prisma.video.findUnique({
+      where: { publicID },
+      include,
+    });
   },
 
   findById(vidID: bigint, includeTags = false) {
@@ -41,7 +71,7 @@ export const videoRepository = {
     status?: string;
   }) {
     const { channelID, tagID, limit, offset, status } = params;
-    
+
     const where: any = {};
     if (channelID) where.channelID = channelID;
     if (status) where.processingStatus = status;
