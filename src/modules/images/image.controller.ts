@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import * as imageService from "./image.service";
 import { CreateImageRequest, UpdateImageRequest } from "./image.types";
 import { toJSON } from "../../common/utils";
+import { sanitizeImageForPublic } from '../../common/sanitize';
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
     return (req: Request, res: Response, next: (err: any) => void) => {
@@ -18,7 +19,7 @@ export const createImage = asyncHandler(async (req: Request, res: Response) => {
 export const getImage = asyncHandler(async (req: Request, res: Response) => {
     const imgID = BigInt(req.params.imgID);
     const image = await imageService.getImageByID(imgID);
-    res.json(toJSON(image));
+    res.json(toJSON(sanitizeImageForPublic(image)));
 });
 
 export const updateImage = asyncHandler(async (req: Request, res: Response) => {

@@ -1,3 +1,77 @@
+// Public sanitization helpers
+export function sanitizeVideoForPublic(video: any) {
+  if (!video || typeof video !== 'object') return video;
+
+  // Make a shallow copy so we don't mutate the DB object
+  const safe = { ...video };
+
+  // Remove storage/internal fields that should not be exposed publicly
+  delete safe.s3Bucket;
+  delete safe.s3KeyOriginal;
+  delete safe.s3Key;
+  delete safe.cloudflareVID;
+  delete safe.processingStatus;
+  delete safe.codec;
+
+  // Remove internal ids from nested objects where not needed
+  if (safe.channel && typeof safe.channel === 'object') {
+    const ch = { ...safe.channel };
+    delete ch.userID; // avoid exposing channel owner's internal userID
+    delete ch.s3Key;
+    delete ch.channelLogoS3Key;
+    safe.channel = ch;
+  }
+
+  // Remove any other obviously sensitive fields
+  delete safe.internalNotes;
+  delete safe.adminOnly;
+
+  return safe;
+}
+
+export function sanitizeUserForPublic(user: any) {
+  if (!user || typeof user !== 'object') return user;
+  const safe = { ...user };
+  delete safe.passwordHash;
+  delete safe.resetToken;
+  delete safe.emailVerificationToken;
+  delete safe.userPhone;
+  delete safe.userEmail;
+  return safe;
+}
+
+export function sanitizeImageForPublic(image: any) {
+  if (!image || typeof image !== 'object') return image;
+  const safe = { ...image };
+  delete safe.s3Key;
+  delete safe.s3Bucket;
+  // preserve imgURL (public) but ensure internal names aren't exposed
+  delete safe.internalNotes;
+  return safe;
+}
+
+export function sanitizeChannelForPublic(channel: any) {
+  if (!channel || typeof channel !== 'object') return channel;
+  const safe = { ...channel };
+  // hide internal owner id and storage keys
+  delete safe.userID;
+  delete safe.s3Key;
+  delete safe.channelLogoS3Key;
+  delete safe.internalNotes;
+  // Trim subscribers list if present
+  if (Array.isArray(safe.subscribers)) {
+    safe.subscribers = safe.subscribers.map((s: any) => {
+      if (s && typeof s === 'object') {
+        const copy = { ...s };
+        delete copy.email;
+        delete copy.phone;
+        return copy;
+      }
+      return s;
+    });
+  }
+  return safe;
+}
 /**
  * Security: Data Sanitization Module
  * Removes sensitive fields from user responses to prevent data leaks

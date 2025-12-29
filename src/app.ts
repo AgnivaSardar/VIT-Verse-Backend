@@ -62,6 +62,8 @@ console.log('🔐 CORS allowed origins:', allowedOrigins);
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl) and allow listed origins
+    // In development allow any localhost origin (different dev ports like 5173/5174)
+    if (process.env.NODE_ENV !== 'production' && origin && origin.includes('localhost')) return callback(null, true);
     if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error('Not allowed by CORS'));
   },

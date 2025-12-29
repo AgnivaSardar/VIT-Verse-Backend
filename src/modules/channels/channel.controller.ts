@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import * as channelService from "./channel.service";
 import { CreateChannelRequest, UpdateChannelRequest } from "./channel.types";
 import { toJSON } from "../../common/utils";
+import { sanitizeChannelForPublic } from '../../common/sanitize';
 import { uploadToS3, isS3Configured } from "../../config/s3";
 import crypto from "crypto";
 import { AppError } from "../../common/errors"; // Added AppError import
@@ -69,7 +70,7 @@ export const getChannel = asyncHandler(async (req: Request, res: Response) => {
   if (!channel) {
     throw new AppError('Channel not found', 404);
   }
-  res.json(toJSON(channel));
+  res.json(toJSON(sanitizeChannelForPublic(channel)));
 });
 
 export const deleteChannel = asyncHandler(async (req: Request, res: Response) => {
@@ -127,7 +128,9 @@ export const listChannels = asyncHandler(async (req: Request, res: Response) => 
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
   const result = await channelService.listChannelsService(page, limit);
-  res.json(toJSON(result));
+  // sanitize each channel in the list
+  const safe = Array.isArray(result) ? result.map((c: any) => sanitizeChannelForPublic(c)) : sanitizeChannelForPublic(result);
+  res.json(toJSON(safe));
 }
 );
 
@@ -152,7 +155,7 @@ export const getChannelByNameAndUser = asyncHandler(async (req: Request, res: Re
   const channelName = req.params.channelName;
   const userID = BigInt(req.params.userID);
   const channel = await channelService.getChannelByNameAndUserService(channelName, userID);
-  res.json(channel);
+  res.json(toJSON(sanitizeChannelForPublic(channel)));
 }
 );
 
@@ -163,7 +166,7 @@ export const getMyChannel = asyncHandler(async (req: Request, res: Response) => 
     res.status(404).json({ message: "Channel not found" });
     return;
   }
-  res.json(toJSON(channel));
+  res.json(toJSON(sanitizeChannelForPublic(channel)));
 });
 
 export const getChannelStats = asyncHandler(async (req: Request, res: Response) => {

@@ -164,10 +164,12 @@ export async function getPlaylistsByUserID(userID: bigint) {
       },
       user: {
         select: {
+          userID: true,
           userName: true,
           channels: {
             select: {
               channelID: true,
+              publicID: true,
               channelName: true,
               channelImage: true,
             },

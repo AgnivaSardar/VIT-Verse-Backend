@@ -4,6 +4,7 @@ import { videoService } from './video.service';
 import type { CreateVideoInput } from './video.types';
 import { AppError } from '../../common/errors';
 import { toJSON } from '../../common/utils';
+import { sanitizeVideoForPublic } from '../../common/sanitize';
 import { channelService } from '../channels/channel.service';
 import { getS3PublicUrl, isS3Configured } from '../../config/s3';
 import fs from 'fs';
@@ -33,7 +34,7 @@ export const deleteVideoHandler = async (req: Request, res: Response) => {
     const vidID = video.vidID;
     const userID = BigInt(String(req.user!.id));
 
-    const ownerID = video.channel?.userID;
+    const ownerID = (video as any).channel?.userID;
     if (!ownerID || BigInt(ownerID) !== userID) {
       throw new AppError('You are not allowed to delete this video', 403);
     }
@@ -319,7 +320,8 @@ export const uploadVideoHandler = async (req: Request, res: Response) => {
 
     res.status(201).json({
       message: 'Video uploaded successfully. Processing in background...',
-      video: toJSON(video),
+      // Return only a sanitized public view by default
+      video: toJSON(sanitizeVideoForPublic(decorateVideoMedia(video as any, process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`))),
     });
   } catch (err: any) {
     if (err instanceof AppError) {
@@ -350,7 +352,8 @@ export const getVideoHandler = async (req: Request, res: Response) => {
 
     const baseUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
     const videoData = decorateVideoMedia(video as any, baseUrl);
-    res.json(toJSON(videoData));
+    // Sanitize before sending publicly
+    res.json(toJSON(sanitizeVideoForPublic(videoData)));
   } catch (err: any) {
     console.error('❌ Get video error:', err);
     if (err instanceof AppError) {
@@ -373,7 +376,10 @@ export const listVideosHandler = async (req: Request, res: Response) => {
     });
 
     const baseUrl = process.env.BACKEND_URL || process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
-    const videosWithUrls = videos.map((video: any) => decorateVideoMedia(video, baseUrl));
+    const videosWithUrls = videos.map((video: any) => {
+      const dec = decorateVideoMedia(video, baseUrl);
+      return sanitizeVideoForPublic(dec);
+    });
     res.json(toJSON(videosWithUrls));
   } catch (err) {
     console.error('List videos error:', err);
@@ -401,7 +407,10 @@ export const searchVideosByTitleHandler = async (req: Request, res: Response) =>
 
     // Generate playback URLs and absolute thumbnails for local development
     const baseUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
-    const videosWithUrls = videos.map((video: any) => decorateVideoMedia(video, baseUrl));
+    const videosWithUrls = videos.map((video: any) => {
+      const dec = decorateVideoMedia(video, baseUrl);
+      return sanitizeVideoForPublic(dec);
+    });
 
     res.json(toJSON(videosWithUrls));
   } catch (err: any) {
@@ -488,7 +497,10 @@ export const getMyVideosHandler = async (req: Request, res: Response) => {
       Number(page),
       Number(limit),
     );
-    res.json(videos);
+    // Even for owners, do not leak raw storage keys — return sanitized views.
+    const baseUrl = process.env.BACKEND_URL || process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
+    const safe = videos.map((v: any) => sanitizeVideoForPublic(decorateVideoMedia(v, baseUrl)));
+    res.json(toJSON(safe));
   } catch (err) {
     console.error('Get my videos error:', err);
     if (err instanceof AppError) {

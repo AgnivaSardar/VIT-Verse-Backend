@@ -80,7 +80,9 @@ async function reprocessVideo(vidID) {
     return;
   }
   
-  console.log(`📥 Downloading from S3: ${video.s3KeyOriginal}`);
+  // Redact S3 key in logs (show only the tail) to avoid leaking secrets
+  const keyTail = video.s3KeyOriginal.slice(-12);
+  console.log(`📥 Downloading from S3: bucket=${video.s3Bucket} key=*...${keyTail}`);
   const videoBuffer = await downloadFromS3(video.s3Bucket, video.s3KeyOriginal);
   
   const tempDir = path.join(process.cwd(), 'uploads', 'temp');
