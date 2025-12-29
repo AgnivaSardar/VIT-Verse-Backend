@@ -70,7 +70,19 @@ export const getChannel = asyncHandler(async (req: Request, res: Response) => {
   if (!channel) {
     throw new AppError('Channel not found', 404);
   }
-  res.json(toJSON(sanitizeChannelForPublic(channel)));
+  // Sanitize for public response, but mark ownership for the requester so the frontend can
+  // render owner-only UI (edit, statistics) without exposing internal userID.
+  const safe = sanitizeChannelForPublic(channel);
+  try {
+    const requesterID = req.user?.id ? BigInt(String(req.user!.id)) : null;
+    if (requesterID && BigInt(channel.userID) === requesterID) {
+      (safe as any).isOwner = true;
+    }
+  } catch (e) {
+    // Ignore any conversion errors and don't set isOwner
+  }
+
+  res.json(toJSON(safe));
 });
 
 export const deleteChannel = asyncHandler(async (req: Request, res: Response) => {
@@ -155,7 +167,16 @@ export const getChannelByNameAndUser = asyncHandler(async (req: Request, res: Re
   const channelName = req.params.channelName;
   const userID = BigInt(req.params.userID);
   const channel = await channelService.getChannelByNameAndUserService(channelName, userID);
-  res.json(toJSON(sanitizeChannelForPublic(channel)));
+  const safe = sanitizeChannelForPublic(channel);
+  try {
+    const requesterID = req.user?.id ? BigInt(String(req.user!.id)) : null;
+    if (requesterID && BigInt(channel.userID) === requesterID) {
+      (safe as any).isOwner = true;
+    }
+  } catch (e) {
+    // ignore
+  }
+  res.json(toJSON(safe));
 }
 );
 
@@ -166,7 +187,10 @@ export const getMyChannel = asyncHandler(async (req: Request, res: Response) => 
     res.status(404).json({ message: "Channel not found" });
     return;
   }
-  res.json(toJSON(sanitizeChannelForPublic(channel)));
+  const safe = sanitizeChannelForPublic(channel);
+  // requester is by definition the owner
+  (safe as any).isOwner = true;
+  res.json(toJSON(safe));
 });
 
 export const getChannelStats = asyncHandler(async (req: Request, res: Response) => {

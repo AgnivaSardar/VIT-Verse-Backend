@@ -1,7 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
 import { ChannelController } from "./channel.controller";
-import { requireAuth } from "../../middlewares/auth.middleware";
+import { requireAuth, optionalAuth } from "../../middlewares/auth.middleware";
 
 const router = Router();
 
@@ -18,9 +18,9 @@ const uploadLogo = multer({
 const channelController = ChannelController;
 router.post("/", requireAuth, uploadLogo.single("channelLogo"), channelController.createChannel);
 router.get("/", channelController.listChannels);
-router.get("/name/:channelName/user/:userID", channelController.getChannelByNameAndUser);
+router.get("/name/:channelName/user/:userID", optionalAuth, channelController.getChannelByNameAndUser);
 router.get("/my", requireAuth, channelController.getMyChannel);
-router.get("/:channelID", channelController.getChannel);
+router.get("/:channelID", optionalAuth, channelController.getChannel);
 // Stats are only available to the channel owner
 router.get("/:channelID/stats", requireAuth, channelController.getChannelStats);
 router.delete("/:channelID", requireAuth, channelController.deleteChannel);

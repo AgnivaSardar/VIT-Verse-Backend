@@ -451,41 +451,67 @@ export async function togglePlaylistVisibility(playlistId: string) {
 // ========================================
 
 export async function getDashboardStats() {
-  const [
-    totalUsers,
-    activeUsers,
-    totalChannels,
-    publicChannels,
-    totalVideos,
-    publicVideos,
-    totalPlaylists,
-    publicPlaylists,
-    totalViewsResult,
-  ] = await Promise.all([
-    prisma.users.count(),
-    prisma.users.count({ where: { isActive: true } }),
-    prisma.channel.count(),
-    prisma.channel.count({ where: { isAvailableToPublic: true } }),
-    prisma.video.count(),
-    prisma.video.count({ where: { isAvailableToPublic: true } }),
-    prisma.playlist.count(),
-    prisma.playlist.count({ where: { isAvailableToPublic: true } }),
-    prisma.videoStats.aggregate({
-      _sum: { viewsCount: true },
-    }),
-  ]);
+  // Run counts sequentially to avoid using many DB connections at once
+  const totalUsers = await prisma.users.count();
+  const activeUsers = await prisma.users.count({ where: { isActive: true } });
+  const inactiveUsers = Math.max(0, totalUsers - activeUsers);
 
-  // Convert BigInt to Number
-  const totalViews = totalViewsResult._sum.viewsCount 
-    ? Number(totalViewsResult._sum.viewsCount) 
-    : 0;
+  const totalChannels = await prisma.channel.count();
+  const publicChannels = await prisma.channel.count({ where: { isAvailableToPublic: true } });
+  const hiddenChannels = Math.max(0, totalChannels - publicChannels);
+
+  const totalVideos = await prisma.video.count();
+  const publicVideos = await prisma.video.count({ where: { isAvailableToPublic: true } });
+  const hiddenVideos = Math.max(0, totalVideos - publicVideos);
+
+  const totalPlaylists = await prisma.playlist.count();
+  const publicPlaylists = await prisma.playlist.count({ where: { isAvailableToPublic: true } });
+  const hiddenPlaylists = Math.max(0, totalPlaylists - publicPlaylists);
+
+  const totalViewsResult = await prisma.videoStats.aggregate({ _sum: { viewsCount: true } });
+  const totalViews = totalViewsResult._sum.viewsCount ? Number(totalViewsResult._sum.viewsCount) : 0;
+
+  // Recent users for display
+  const recentUsersRaw = await prisma.users.findMany({
+    orderBy: { createdAt: 'desc' },
+    take: 5,
+    select: {
+      userName: true,
+      userEmail: true,
+      role: true,
+      createdAt: true,
+    },
+  });
+
+  const recentUsers = recentUsersRaw.map((u) => ({
+    name: u.userName,
+    email: u.userEmail,
+    role: u.role,
+    createdAt: u.createdAt,
+  }));
 
   return {
-    totalUsers,
-    activeUsers,
-    totalChannels,
-    totalVideos,
-    totalPlaylists,
+    users: {
+      total: totalUsers,
+      active: activeUsers,
+      inactive: inactiveUsers,
+    },
+    channels: {
+      total: totalChannels,
+      public: publicChannels,
+      hidden: hiddenChannels,
+    },
+    videos: {
+      total: totalVideos,
+      public: publicVideos,
+      hidden: hiddenVideos,
+    },
+    playlists: {
+      total: totalPlaylists,
+      public: publicPlaylists,
+      hidden: hiddenPlaylists,
+    },
+    recentUsers,
     totalViews,
   };
 }
