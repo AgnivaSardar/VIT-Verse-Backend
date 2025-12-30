@@ -1,8 +1,11 @@
 import { Router } from "express";
 import { register, login, logout, verifyOTP, resendOTP, requestPasswordChange, changePassword } from "./auth.controller";
 import { loginLimiter, registerLimiter, passwordResetLimiter } from "../../middlewares/rateLimiter.middleware";
+import cors from "cors";
 
 const router = Router();
+
+router.options('/login', cors());
 
 router.post("/register", registerLimiter, register);
 router.post("/login", loginLimiter, login);

@@ -1,31 +1,30 @@
-node_modules
-# Keep environment variables out of version control
+# Build outputs
+dist/
+build/
+*.js
+*.d.ts
+*.js.map
+*.d.ts.map
+tsconfig.tsbuildinfo
+
+# Logs
+logs/
+*.log
+
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# PM2
+ecosystem.config.cjs
+pm2.log
+
+# Certs + temp
+certs/
+package.json.bak
 .env
 
-/generated/prisma
-
-# Super Admin Credentials (NEVER COMMIT THIS)
-SUPER_ADMIN_CREDENTIALS.txt
-
-# Media files (videos and images)
-*.jpg
-*.jpeg
-*.png
-*.gif
-*.mp4
-*.webm
-*.avi
-*.mov
-*.mkv
-*.flv
-*.wmv
-*.webp
-*.svg
-*.bmp
-*.tiff
-*.ico
-*.avif
-
-# Uploads directory
-uploads/
-uploads/**/*
+# IDE
+.vscode/
+.idea/
