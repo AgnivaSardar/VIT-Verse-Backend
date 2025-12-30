@@ -56,17 +56,11 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-const allowedOrigins = process.env.CLIENT_ORIGIN?.split(',') || ['http://localhost:3000', 'http://localhost:5173'];
+const allowedOrigins = process.env.CLIENT_ORIGIN?.split(',') || ['https://18.60.156.89', 'http://18.60.156.89', 'http://localhost:3000', 'https://localhost:3000', '*'];
 console.log('🔐 CORS allowed origins:', allowedOrigins);
 
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl) and allow listed origins
-    // In development allow any localhost origin (different dev ports like 5173/5174)
-    if (process.env.NODE_ENV !== 'production' && origin && origin.includes('localhost')) return callback(null, true);
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error('Not allowed by CORS'));
-  },
+  origin: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-bypass-rate-limit', 'Cache-Control', 'Pragma'],
   credentials: true,
