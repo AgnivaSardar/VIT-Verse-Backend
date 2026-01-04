@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
-import * as studentService from "./student.service";
-import { CreateStudentRequest, UpdateStudentRequest } from "./student.types";
-import { toJSON } from "../../common/utils";
+import * as studentService from "./student.service.js";
+import { CreateStudentRequest, UpdateStudentRequest } from "./student.types.js";
+import { toJSON } from "../../common/utils.js";
+import { AppError } from "../../common/errors.js";
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
   return (req: Request, res: Response, next: (err: any) => void) => {
@@ -10,7 +11,14 @@ function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
 }
 
 export const getStudent = asyncHandler(async (req: Request, res: Response) => {
-  const userID = BigInt(req.params.userID);
+  const userID = (() => {
+  const { userID } = req.params;
+  if (!userID) {
+    throw new AppError("userID is required", 400);
+  }
+  return BigInt(userID);
+})()
+;
   const student = await studentService.getStudentByID(userID);
   // Ensure all BigInt fields are serialized as strings
   res.json(toJSON(student));
@@ -27,7 +35,14 @@ export const createStudent = asyncHandler(async (req: Request, res: Response) =>
 });
 
 export const updateStudent = asyncHandler(async (req: Request, res: Response) => {
-  const userID = BigInt(req.params.userID);
+  const userID = (() => {
+  const { userID } = req.params;
+  if (!userID) {
+    throw new AppError("userID is required", 400);
+  }
+  return BigInt(userID);
+})()
+;
   const input: UpdateStudentRequest = req.body;
   const updated = await studentService.updateStudent(userID, input);
   res.json(toJSON({
@@ -37,7 +52,14 @@ export const updateStudent = asyncHandler(async (req: Request, res: Response) =>
 });
 
 export const deleteStudent = asyncHandler(async (req: Request, res: Response) => {
-  const userID = BigInt(req.params.userID);
+  const userID = (() => {
+  const { userID } = req.params;
+  if (!userID) {
+    throw new AppError("userID is required", 400);
+  }
+  return BigInt(userID);
+})()
+;
   await studentService.deleteStudent(userID);
   res.json({ message: "Student deleted successfully" });
 });

@@ -1,6 +1,6 @@
-import { AppError } from "../../common/errors";
-import * as studentRepo from "./student.repository";
-import { CreateStudentRequest, UpdateStudentRequest } from "./student.types";
+import { AppError } from "../../common/errors.js";
+import * as studentRepo from "./student.repository.js";
+import { CreateStudentRequest, UpdateStudentRequest } from "./student.types.js";
 
 export async function getStudentByID(userID: bigint) {
     const student = await studentRepo.getStudentByID(userID);

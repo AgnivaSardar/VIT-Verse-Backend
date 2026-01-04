@@ -1,4 +1,4 @@
-import { redis } from '../../config/redis';
+import { redis } from '../../config/redis.js';
 
 /**
  * Set video processing progress in Redis for a specific user/upload.

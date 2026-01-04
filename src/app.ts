@@ -8,31 +8,31 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import hpp from 'hpp';
-import { requireSignedRequests } from './middlewares/signature.middleware';
+import { requireSignedRequests } from './middlewares/signature.middleware.js';
 
 // === ALL YOUR MODULE ROUTES ===
-import authRoutes from './modules/auth/auth.routes';
-import adminRoutes from './modules/admin/admin.routes';
-import channelRoutes from './modules/channels/channel.routes';
-import commentRoutes from './modules/comments/comment.routes';
-import imageRoutes from './modules/images/image.routes';
-import jobRoutes from './modules/jobs/job.routes';
-import likeRoutes from './modules/likes/like.routes';
-import notificationRoutes from './modules/notifications/notification.routes';
-import playlistRoutes from './modules/playlists/playlist.routes';
-import reportRoutes from './modules/reports/report.routes';
-import studentRoutes from './modules/students/student.routes';
-import subscriptionRoutes from './modules/subscriptions/subscription.routes';
-import tagRoutes from './modules/tags/tag.routes';
-import teacherRoutes from './modules/teachers/teacher.routes';
-import userRoutes from './modules/users/user.routes';
-import videoRoutes from './modules/videos/video.routes';
-import videostatsRoutes from './modules/videostats/videostats.routes';
-import viewsRoutes from './modules/views/views.routes';
+import authRoutes from './modules/auth/auth.routes.js';
+import adminRoutes from './modules/admin/admin.routes.js';
+import channelRoutes from './modules/channels/channel.routes.js';
+import commentRoutes from './modules/comments/comment.routes.js';
+import imageRoutes from './modules/images/image.routes.js';
+import jobRoutes from './modules/jobs/job.routes.js';
+import likeRoutes from './modules/likes/like.routes.js';
+import notificationRoutes from './modules/notifications/notification.routes.js';
+import playlistRoutes from './modules/playlists/playlist.routes.js';
+import reportRoutes from './modules/reports/report.routes.js';
+import studentRoutes from './modules/students/student.routes.js';
+import subscriptionRoutes from './modules/subscriptions/subscription.routes.js';
+import tagRoutes from './modules/tags/tag.routes.js';
+import teacherRoutes from './modules/teachers/teacher.routes.js';
+import userRoutes from './modules/users/user.routes.js';
+import videoRoutes from './modules/videos/video.routes.js';
+import videostatsRoutes from './modules/videostats/videostats.routes.js';
+import viewsRoutes from './modules/views/views.routes.js';
 
 // Middlewares
-import { errorHandler } from './middlewares/error.middleware';
-import { sanitizeMiddleware } from './common/sanitize';
+import { errorHandler } from './middlewares/error.middleware.js';
+import { sanitizeMiddleware } from './common/sanitize.js';
 
 const app: Application = express();
 
@@ -133,7 +133,7 @@ app.use('/uploads', express.static(uploadsPath, {
 console.log('📁 Serving uploads from:', uploadsPath);
 
 // === LOGGING & TIMING ===
-import { requestLogger } from './middlewares/requestLogger.middleware';
+import { requestLogger } from './middlewares/requestLogger.middleware.js';
 app.use(requestLogger);
 
 // === HEALTH CHECK ===

@@ -1,6 +1,6 @@
-import { AppError } from "../../common/errors";
-import * as teacherRepo from "./teacher.repository";
-import { CreateTeacherRequest, UpdateTeacherRequest } from "./teacher.types";
+import { AppError } from "../../common/errors.js";
+import * as teacherRepo from "./teacher.repository.js";
+import { CreateTeacherRequest, UpdateTeacherRequest } from "./teacher.types.js";
 
 export async function createTeacher(data: CreateTeacherRequest): Promise<void> {
     // Validate unique teacherID

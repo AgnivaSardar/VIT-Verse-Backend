@@ -1,4 +1,4 @@
-import { prisma } from "../../config/prisma";
+import { prisma } from "../../config/prisma.js";
 
 export async function getCommentByID(id: bigint) {
   return prisma.comments.findUnique({

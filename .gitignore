@@ -35,3 +35,12 @@ SUPER_ADMIN_CREDENTIALS.txt
 logs/
 dist/
 
+# build output
+dist/
+*.js
+*.js.map
+*.d.ts
+*.d.ts.map
+
+# logs & runtime
+logs/

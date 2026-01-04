@@ -1,9 +1,9 @@
-import { AppError, ValidationError } from '../../common/errors';
-import * as channelRepo from './channel.repository';
-import { CreateChannelRequest, UpdateChannelRequest } from './channel.types';
-import { prisma } from '../../config/prisma';
-import * as subscriptionService from '../subscriptions/subscription.service';
-import { deleteFromS3 } from '../../config/s3';
+import { AppError, ValidationError } from '../../common/errors.js';
+import * as channelRepo from './channel.repository.js';
+import { CreateChannelRequest, UpdateChannelRequest } from './channel.types.js';
+import { prisma } from '../../config/prisma.js';
+import * as subscriptionService from '../subscriptions/subscription.service.js';
+import { deleteFromS3 } from '../../config/s3.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -153,8 +153,12 @@ export async function unsubscribeFromChannelService(channelID: bigint, userID: b
     });
 }
 
-export function getChannelByNameAndUserService(channelName: string, userID: bigint) {
-    throw new Error('Function not implemented.');
+export async function getChannelByNameAndUserService(channelName: string, userID: bigint) {
+    const channel = await channelRepo.getChannelByNameAndUser(channelName, userID);
+    if (!channel) {
+        throw new AppError('Channel not found', 404);
+    }
+    return channel;
 }
 
 export async function getChannelStats(channelID: bigint) {

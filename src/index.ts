@@ -5,13 +5,13 @@ import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import prisma from './config/prisma';
+import prisma from './config/prisma.js';
 
 dotenv.config();
 
-import app from './app';
-import { redis } from './config/redis';
-import { initSocketIO } from './modules/realtime/socket.server';
+import app from './app.js';
+import { redis } from './config/redis.js';
+import { initSocketIO } from './modules/realtime/socket.server.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,7 +20,7 @@ const PORT = Number(process.env.PORT) || 5000;
 const HTTPS_PORT = Number(process.env.HTTPS_PORT) || 5443;  // ← HTTPS PORT
 const HOST = process.env.HOST || '0.0.0.0';
 
-let httpsServer: https.Server;  // ← HTTPS Server
+let server: https.Server | http.Server;  // ← Server (HTTPS or HTTP)
 
 // Monitor database connection health
 async function checkDatabaseHealth() {
@@ -59,32 +59,54 @@ async function bootstrap() {
     // Start connection pool monitoring
     monitorConnectionPool();
 
-    // HTTPS Server with Socket.io
-    const options = {
-      key: fs.readFileSync(path.join(__dirname, '../certs/key.pem')),
-      cert: fs.readFileSync(path.join(__dirname, '../certs/cert.pem'))
-    };
+    // Try HTTPS first, fall back to HTTP if certificates not found
+    const certPath = path.join(__dirname, '../certs/key.pem');
+    const certExists = fs.existsSync(certPath) && fs.existsSync(path.join(__dirname, '../certs/cert.pem'));
 
-    httpsServer = https.createServer(options, app);
-    const io = initSocketIO(httpsServer);  // ← Socket.io on HTTPS
-    console.log('✅ Socket.io ready (HTTPS)');
+    if (certExists) {
+      // HTTPS Server with Socket.io
+      const options = {
+        key: fs.readFileSync(path.join(__dirname, '../certs/key.pem')),
+        cert: fs.readFileSync(path.join(__dirname, '../certs/cert.pem'))
+      };
 
-    httpsServer.listen(HTTPS_PORT, HOST, () => {
-      console.log(`🔒 HTTPS Server: https://${HOST}:${HTTPS_PORT}`);
-      console.log(`🏥 Health: https://${HOST}:${HTTPS_PORT}/health`);
-      console.log(`🔗 Connection Test: https://${HOST}:${HTTPS_PORT}/api/test-connection`);
-      console.log(`🚀 React Login: https://18.60.156.89:${HTTPS_PORT}/auth/login`);
-      console.log(`📦 Storage Mode: ${process.env.STORAGE_TYPE || 'local'} (${process.env.NODE_ENV === 'production' ? 'production' : 'development'})`);
-      console.log(`🗄️  Database: ${process.env.DATABASE_URL?.split('@')[1]?.split('?')[0] || 'local PostgreSQL'}`);
-      console.log(`📱 Modules: auth, channels, videos, tags, jobs, notifications, & more`);
-      console.log(`✅ Ready for localhost:5173 frontend!`);
-    });
+      server = https.createServer(options, app);
+      const io = initSocketIO(server);
+      console.log('✅ Socket.io ready (HTTPS)');
+
+      server.listen(HTTPS_PORT, HOST, () => {
+        console.log(`🔒 HTTPS Server: https://${HOST}:${HTTPS_PORT}`);
+        console.log(`🏥 Health: https://${HOST}:${HTTPS_PORT}/health`);
+        console.log(`🔗 Connection Test: https://${HOST}:${HTTPS_PORT}/api/test-connection`);
+        console.log(`🚀 React Login: https://18.60.156.89:${HTTPS_PORT}/auth/login`);
+        console.log(`📦 Storage Mode: ${process.env.STORAGE_TYPE || 'local'} (${process.env.NODE_ENV === 'production' ? 'production' : 'development'})`);
+        console.log(`🗄️  Database: ${process.env.DATABASE_URL?.split('@')[1]?.split('?')[0] || 'local PostgreSQL'}`);
+        console.log(`📱 Modules: auth, channels, videos, tags, jobs, notifications, & more`);
+        console.log(`✅ Ready for localhost:5173 frontend!`);
+      });
+    } else {
+      // HTTP fallback
+      console.log('⚠️  SSL certificates not found, using HTTP');
+      server = http.createServer(app);
+      const io = initSocketIO(server);
+      console.log('✅ Socket.io ready (HTTP)');
+
+      server.listen(PORT, HOST, () => {
+        console.log(`🌐 HTTP Server: http://${HOST}:${PORT}`);
+        console.log(`🏥 Health: http://${HOST}:${PORT}/health`);
+        console.log(`🔗 Connection Test: http://${HOST}:${PORT}/api/test-connection`);
+        console.log(`📦 Storage Mode: ${process.env.STORAGE_TYPE || 'local'} (${process.env.NODE_ENV === 'production' ? 'production' : 'development'})`);
+        console.log(`🗄️  Database: ${process.env.DATABASE_URL?.split('@')[1]?.split('?')[0] || 'local PostgreSQL'}`);
+        console.log(`📱 Modules: auth, channels, videos, tags, jobs, notifications, & more`);
+        console.log(`✅ Ready for localhost:5173 frontend!`);
+      });
+    }
 
     // Graceful shutdown
     process.on('SIGINT', async () => {
       console.log('\n🛑 Graceful shutdown...');
       await prisma.$disconnect().catch(console.error);
-      httpsServer.close(() => process.exit(0));
+      server.close(() => process.exit(0));
     });
 
   } catch (error) {

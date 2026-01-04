@@ -1,6 +1,6 @@
-import { AppError } from "../../common/errors";
-import * as userRepo from "./user.repository";
-import { CreateUserRequest, UpdateUserRequest } from "./user.types";
+import { AppError } from "../../common/errors.js";
+import * as userRepo from "./user.repository.js";
+import { CreateUserRequest, UpdateUserRequest } from "./user.types.js";
 
 export async function createUser(data: CreateUserRequest): Promise<void> {
   // Check for existing user with the same email

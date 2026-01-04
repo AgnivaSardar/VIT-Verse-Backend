@@ -1,4 +1,4 @@
-import { prisma } from "../../config/prisma";
+import { prisma } from "../../config/prisma.js";
 
 // Safe user fields to return in API responses (excludes password)
 const SAFE_USER_SELECT = {

@@ -1,9 +1,9 @@
 // src/modules/tags/tag.controller.ts
 import type { Request, Response } from 'express';
-import { tagService } from './tag.service';
-import { videoService } from '../videos/video.service';
-import { toJSON } from '../../common/utils';
-import { AppError } from '../../common/errors';
+import { tagService } from './tag.service.js';
+import { videoService } from '../videos/video.service.js';
+import { toJSON } from '../../common/utils.js';
+import { AppError } from '../../common/errors.js';
 
 export const createTagHandler = async (req: Request, res: Response) => {
   const data = req.body;
@@ -12,7 +12,14 @@ export const createTagHandler = async (req: Request, res: Response) => {
 };
 
 export const getTagHandler = async (req: Request, res: Response) => {
-  const id = BigInt(req.params.id);
+  const id = (() => {
+  const { id } = req.params;
+  if (!id) {
+    throw new AppError("id is required", 400);
+  }
+  return BigInt(id);
+})()
+;
   const tag = await tagService.getTagById(id);
   res.json(toJSON(tag));
 };
@@ -33,7 +40,9 @@ export const searchTagsHandler = async (req: Request, res: Response) => {
 };
 
 export const addTagsToVideoHandler = async (req: Request, res: Response) => {
-  const videoID = await videoService.resolveVideoID(req.params.videoID);
+  const videoIdParam = req.params.videoID;
+  if (!videoIdParam) throw new AppError("videoID parameter is required", 400);
+  const videoID = await videoService.resolveVideoID(videoIdParam);
   if (!videoID) throw new AppError("Video not found", 404);
   const tagNames = (req.body.tags as string[]) || [];
   const tags = await tagService.addTagToVideo(videoID, tagNames);
@@ -41,7 +50,9 @@ export const addTagsToVideoHandler = async (req: Request, res: Response) => {
 };
 
 export const getVideoTagsHandler = async (req: Request, res: Response) => {
-  const videoID = await videoService.resolveVideoID(req.params.videoID);
+  const videoIdParam = req.params.videoID;
+  if (!videoIdParam) throw new AppError("videoID parameter is required", 400);
+  const videoID = await videoService.resolveVideoID(videoIdParam);
   if (!videoID) throw new AppError("Video not found", 404);
   const videoTags = await tagService.getVideoTags(videoID);
   // Extract just the tag objects from the VideoTag join table records

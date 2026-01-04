@@ -1,7 +1,7 @@
 import { Router } from "express";
 
-import { ImageController } from "./image.controller";
-import { requireAuth } from "../../middlewares/auth.middleware";
+import { ImageController } from "./image.controller.js";
+import { requireAuth } from "../../middlewares/auth.middleware.js";
 
 const router = Router();
 const imageController = ImageController;

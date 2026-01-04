@@ -7,9 +7,9 @@ import {
   searchTagsHandler,
   addTagsToVideoHandler,
   getVideoTagsHandler,
-} from './tag.controller';
-import { requireAuth } from '../../middlewares/auth.middleware';
-import { cacheResponse } from '../../common/cache';
+} from './tag.controller.js';
+import { requireAuth } from '../../middlewares/auth.middleware.js';
+import { cacheResponse } from '../../common/cache.js';
 
 const router = Router();
 

@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { ViewsController } from "./views.controller";
-import { requireAuth } from "../../middlewares/auth.middleware";
+import { ViewsController } from "./views.controller.js";
+import { requireAuth } from "../../middlewares/auth.middleware.js";
 
 const router = Router();
 router.post("/", requireAuth, ViewsController.createView);

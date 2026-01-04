@@ -1,13 +1,13 @@
 // src/modules/videos/video.service.ts
-import { videoRepository } from './video.repository';
-import { tagService } from '../tags/tag.service';
-import { jobRepository } from '../jobs/job.repository';
-import { getIO } from '../realtime/socket.server';
-import { socketEvents } from '../realtime/socket.handlers';
-import { uploadToS3, isS3Configured, getS3PublicUrl } from '../../config/s3';
-import { supabaseStorage } from '../../config/supabase';
-import * as videoSearch from './video.search';
-import * as imageRepo from '../images/image.repository';
+import { videoRepository } from './video.repository.js';
+import { tagService } from '../tags/tag.service.js';
+import { jobRepository } from '../jobs/job.repository.js';
+import { getIO } from '../realtime/socket.server.js';
+import { socketEvents } from '../realtime/socket.handlers.js';
+import { uploadToS3, isS3Configured, getS3PublicUrl } from '../../config/s3.js';
+import { supabaseStorage } from '../../config/supabase.js';
+import * as videoSearch from './video.search.js';
+import * as imageRepo from '../images/image.repository.js';
 import fs from 'fs';
 import path from 'path';
 import { execFile } from 'child_process';
@@ -17,7 +17,7 @@ import type {
   UpdateVideoInput,
   TranscodeJobPayload,
   Visibility,
-} from './video.types';
+} from './video.types.js';
 import type { Prisma } from '@prisma/client';
 import crypto from 'crypto';
 
@@ -330,7 +330,7 @@ export const videoService = {
   async getVideoStreamUrl(video: any): Promise<string> {
     // If video is stored in S3, generate presigned URL
     if (video.s3Bucket && video.s3KeyOriginal) {
-      const { getSignedDownloadUrl } = await import('../../config/s3');
+      const { getSignedDownloadUrl } = await import('../../config/s3.js');
       return getSignedDownloadUrl(video.s3KeyOriginal, 3600); // 1 hour expiry
     }
 

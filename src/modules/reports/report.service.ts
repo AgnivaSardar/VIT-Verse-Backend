@@ -1,6 +1,6 @@
-import { AppError } from "../../common/errors";
-import * as reportRepo from "./report.repository";
-import { CreateReportRequest, UpdateReportRequest } from "./report.types";
+import { AppError } from "../../common/errors.js";
+import * as reportRepo from "./report.repository.js";
+import { CreateReportRequest, UpdateReportRequest } from "./report.types.js";
 
 export async function createReport(data: CreateReportRequest): Promise<void> {
     // Additional validation can be added here if needed

@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 // Adjust the import to match the actual export from job.service
-import * as jobService from './job.service';
+import * as jobService from './job.service.js';
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) { 
     return (req: Request, res: Response, next: (err: any) => void) => {

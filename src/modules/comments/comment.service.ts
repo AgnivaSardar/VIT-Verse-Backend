@@ -1,9 +1,9 @@
-import { AppError, ValidationError } from "../../common/errors";
-import * as commentRepo from "./comment.repository";
-import { getIO } from "../realtime/socket.server";
-import { socketEvents } from "../realtime/socket.handlers";
-import { CreateCommentRequest, UpdateCommentRequest } from "./comment.types";
-import { userRepository } from "../users/user.repository";
+import { AppError, ValidationError } from "../../common/errors.js";
+import * as commentRepo from "./comment.repository.js";
+import { getIO } from "../realtime/socket.server.js";
+import { socketEvents } from "../realtime/socket.handlers.js";
+import { CreateCommentRequest, UpdateCommentRequest } from "./comment.types.js";
+import { userRepository } from "../users/user.repository.js";
 
 export async function createComment(data: CreateCommentRequest) {
     const comment = await commentRepo.createComment(data);

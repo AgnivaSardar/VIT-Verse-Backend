@@ -1,10 +1,10 @@
 // src/modules/jobs/job.worker.ts
-import { prisma } from '../../config/prisma';
-import { jobRepository } from './job.repository';
+import { prisma } from '../../config/prisma.js';
+import { jobRepository } from './job.repository.js';
 
 import { exec } from 'child_process';
 import util from 'util';
-import { setVideoProcessingProgress, clearVideoProcessingProgress } from '../videos/video.progress.util';
+import { setVideoProcessingProgress, clearVideoProcessingProgress } from '../videos/video.progress.util.js';
 
 const execPromise = util.promisify(exec);
 
@@ -46,7 +46,7 @@ async function processTranscodeJob(job: any): Promise<void> {
       data: { status: 'FAILED' },
     });
     if (userId && uploadId) {
-      await setVideoProcessingProgress(userId, uploadId, { percent: 100, status: 'failed', error: error?.message || 'Processing failed' });
+      await setVideoProcessingProgress(userId, uploadId, { percent: 100, status: 'failed', error: (error as Error)?.message || 'Processing failed' });
     }
     console.error(`Failed to process job ${job.id}:`, error);
   }

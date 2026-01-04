@@ -1,6 +1,6 @@
-import { AppError } from "../../common/errors";
-import * as imageRepo from "./image.repository";
-import { CreateImageRequest, UpdateImageRequest } from "./image.types";
+import { AppError } from "../../common/errors.js";
+import * as imageRepo from "./image.repository.js";
+import { CreateImageRequest, UpdateImageRequest } from "./image.types.js";
 
 export async function createImage(data: CreateImageRequest): Promise<void> {
     // Additional validation can be added here if needed

@@ -1,9 +1,9 @@
 import { Request, Response, CookieOptions } from 'express';
-import * as authService from './auth.service';
-import { registerSchema, loginSchema } from './auth.schema';
-import { sendOTP } from '../../services/email.service';
+import * as authService from './auth.service.js';
+import { registerSchema, loginSchema } from './auth.schema.js';
+import { sendOTP } from '../../services/email.service.js';
 import { z } from 'zod';
-import { config } from '../../config/env';
+import { config } from '../../config/env.js';
 
 const cookieOptions: CookieOptions = {
   httpOnly: true,
@@ -73,7 +73,7 @@ export const resendOTP = asyncHandler(async (req: Request, res: Response) => {
   const input = resendOTPSchema.parse(req.body);
 
   // Get user by email to verify they exist
-  const { prisma } = await import('../../config/prisma');
+  const { prisma } = await import('../../config/prisma.js');
   const user = await prisma.users.findUnique({
     where: { userEmail: input.email },
   });
@@ -102,7 +102,7 @@ const requestPasswordChangeSchema = z.object({
 export const requestPasswordChange = asyncHandler(async (req: Request, res: Response) => {
   const input = requestPasswordChangeSchema.parse(req.body);
 
-  const { prisma } = await import('../../config/prisma');
+  const { prisma } = await import('../../config/prisma.js');
   const user = await prisma.users.findUnique({
     where: { userEmail: input.email },
   });
@@ -113,7 +113,7 @@ export const requestPasswordChange = asyncHandler(async (req: Request, res: Resp
   }
 
   // Send password change OTP
-  const { emailService } = await import('../../services/email.service');
+  const { emailService } = await import('../../services/email.service.js');
   await emailService.sendPasswordChangeOTP(user.userEmail, user.userName);
 
   res.json({ message: 'Password change OTP sent to your email' });
@@ -130,7 +130,7 @@ export const changePassword = asyncHandler(async (req: Request, res: Response) =
   const input = changePasswordSchema.parse(req.body);
 
   // Verify OTP
-  const { emailService } = await import('../../services/email.service');
+  const { emailService } = await import('../../services/email.service.js');
   const otpResult = emailService.verifyOTP(input.email, input.otp);
 
   if (!otpResult.valid) {

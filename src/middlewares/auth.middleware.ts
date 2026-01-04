@@ -1,12 +1,13 @@
 // src/middlewares/auth.middleware.ts
 import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { config } from '../config/env';
-import { AuthError } from '../common/errors';
+import { config } from '../config/env.js';
+import { AuthError } from '../common/errors.js';
 
 export interface AuthUser {
   id: string | number;  // can be string or number from JWT
   role?: string;        // optional to match UserPayload.role
+  isSuperAdmin?: boolean; // flag to identify super admin users
 }
 
 export interface AuthRequest extends Request {

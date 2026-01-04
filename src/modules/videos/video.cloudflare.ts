@@ -1,5 +1,5 @@
 // src/modules/videos/video.cloudflare.ts
-import { cloudflareStreamApi } from '../../config/cloudflare';
+import { cloudflareStreamApi } from '../../config/cloudflare.js';
 
 export interface CloudflareStreamVideo {
   uid: string;

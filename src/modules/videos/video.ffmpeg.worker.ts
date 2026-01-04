@@ -1,5 +1,5 @@
 // src/modules/videos/video.ffmpeg.worker.ts
-import { prisma } from '../../config/prisma';
+import { prisma } from '../../config/prisma.js';
 import { exec } from 'child_process';
 import util from 'util';
 

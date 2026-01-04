@@ -1,10 +1,11 @@
 // src/middlewares/admin.middleware.ts
 import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../config/prisma';
-import { AppError } from '../common/errors';
+import { prisma } from '../config/prisma.js';
+import { AppError } from '../common/errors.js';
+import { AuthRequest } from './auth.middleware.js';
 
 export async function requireSuperAdmin(
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> {
@@ -37,7 +38,7 @@ export async function requireSuperAdmin(
 }
 
 export async function requireAdminOrSuperAdmin(
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> {

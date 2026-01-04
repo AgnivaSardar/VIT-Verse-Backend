@@ -1,6 +1,6 @@
 // src/modules/tags/tag.service.ts
-import { tagRepository } from './tag.repository';
-import type { CreateTagInput, UpdateTagInput } from './tag.types';
+import { tagRepository } from './tag.repository.js';
+import type { CreateTagInput, UpdateTagInput } from './tag.types.js';
 
 export const tagService = {
   async createTag(data: CreateTagInput) {

@@ -1,8 +1,8 @@
-import { AppError } from "../../common/errors";
-import * as subscriptionRepo from "./subscription.repository";
-import { getIO } from "../realtime/socket.server";
-import { socketEvents } from "../realtime/socket.handlers";
-import * as channelService from "../channels/channel.service";
+import { AppError } from "../../common/errors.js";
+import * as subscriptionRepo from "./subscription.repository.js";
+import { getIO } from "../realtime/socket.server.js";
+import { socketEvents } from "../realtime/socket.handlers.js";
+import * as channelService from "../channels/channel.service.js";
 
 export async function subscribe(channelID: bigint, userID: bigint) {
     // Check if the subscription already exists
@@ -19,7 +19,9 @@ export async function subscribe(channelID: bigint, userID: bigint) {
     try {
         const io = getIO();
         const channel = await channelService.getChannelByID(channelID);
-        socketEvents.notifySubscription(io, userID.toString(), channelID.toString(), channel.channelName);
+        if (channel) {
+            socketEvents.notifySubscription(io, userID.toString(), channelID.toString(), channel.channelName);
+        }
     } catch (err) {
         console.log('Socket or channel fetch error on subscribe:', err);
     }

@@ -1,11 +1,12 @@
 import { Request, Response } from "express";
-import * as channelService from "./channel.service";
-import { CreateChannelRequest, UpdateChannelRequest } from "./channel.types";
-import { toJSON } from "../../common/utils";
-import { sanitizeChannelForPublic } from '../../common/sanitize';
-import { uploadToS3, isS3Configured } from "../../config/s3";
+import * as channelService from "./channel.service.js";
+import { CreateChannelRequest, UpdateChannelRequest } from "./channel.types.js";
+import { toJSON } from "../../common/utils.js";
+import { sanitizeChannelForPublic } from '../../common/sanitize.js';
+import { uploadToS3, isS3Configured } from "../../config/s3.js";
 import crypto from "crypto";
-import { AppError } from "../../common/errors"; // Added AppError import
+import { AppError } from "../../common/errors.js"; // Added AppError import
+import { AuthRequest } from "../../middlewares/auth.middleware.js";
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
   return (req: Request, res: Response, next: (err: any) => void) => {
@@ -13,7 +14,7 @@ function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
   };
 }
 
-export const createChannel = asyncHandler(async (req: Request, res: Response) => {
+export const createChannel = asyncHandler(async (req: AuthRequest, res: Response) => {
   const userID = BigInt(String(req.user!.id));
   const logoFile = (req as any).file;
 
@@ -55,8 +56,9 @@ export const createChannel = asyncHandler(async (req: Request, res: Response) =>
 }
 );
 
-export const getChannel = asyncHandler(async (req: Request, res: Response) => {
+export const getChannel = asyncHandler(async (req: AuthRequest, res: Response) => {
   const idParam = req.params.channelID;
+  if (!idParam) throw new AppError('Channel ID is required', 400);
   let channel;
 
   // Try finding by publicID first
@@ -85,8 +87,15 @@ export const getChannel = asyncHandler(async (req: Request, res: Response) => {
   res.json(toJSON(safe));
 });
 
-export const deleteChannel = asyncHandler(async (req: Request, res: Response) => {
-  const channelID = BigInt(req.params.channelID);
+export const deleteChannel = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const channelID = (() => {
+  const { channelID } = req.params;
+  if (!channelID) {
+    throw new AppError("channelID is required", 400);
+  }
+  return BigInt(channelID);
+})()
+;
   const userID = BigInt(String(req.user!.id));
   await channelService.deleteChannel(channelID, userID);
   res.json({ message: "Channel deleted successfully" });
@@ -94,8 +103,15 @@ export const deleteChannel = asyncHandler(async (req: Request, res: Response) =>
 );
 
 // Additional controller methods (updateChannel, listChannels, subscribeToChannel, unsubscribeFromChannel) can be added similarly.
-export const updateChannel = asyncHandler(async (req: Request, res: Response) => {
-  const channelID = BigInt(req.params.channelID);
+export const updateChannel = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const channelID = (() => {
+  const { channelID } = req.params;
+  if (!channelID) {
+    throw new AppError("channelID is required", 400);
+  }
+  return BigInt(channelID);
+})()
+;
   const userID = BigInt(String(req.user!.id));
   const logoFile = (req as any).file;
 
@@ -146,16 +162,30 @@ export const listChannels = asyncHandler(async (req: Request, res: Response) => 
 }
 );
 
-export const subscribeToChannel = asyncHandler(async (req: Request, res: Response) => {
-  const channelID = BigInt(req.params.channelID);
+export const subscribeToChannel = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const channelID = (() => {
+  const { channelID } = req.params;
+  if (!channelID) {
+    throw new AppError("channelID is required", 400);
+  }
+  return BigInt(channelID);
+})()
+;
   const userID = BigInt(req.body.userID);
   await channelService.subscribeToChannelService(channelID, userID);
   res.json({ message: "Subscribed to channel successfully" });
 }
 );
 
-export const unsubscribeFromChannel = asyncHandler(async (req: Request, res: Response) => {
-  const channelID = BigInt(req.params.channelID);
+export const unsubscribeFromChannel = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const channelID = (() => {
+  const { channelID } = req.params;
+  if (!channelID) {
+    throw new AppError("channelID is required", 400);
+  }
+  return BigInt(channelID);
+})()
+;
   const userID = BigInt(req.body.userID);
   await channelService.unsubscribeFromChannelService(channelID, userID);
   res.json({ message: "Unsubscribed from channel successfully" });
@@ -163,9 +193,17 @@ export const unsubscribeFromChannel = asyncHandler(async (req: Request, res: Res
 
 );
 
-export const getChannelByNameAndUser = asyncHandler(async (req: Request, res: Response) => {
+export const getChannelByNameAndUser = asyncHandler(async (req: AuthRequest, res: Response) => {
   const channelName = req.params.channelName;
-  const userID = BigInt(req.params.userID);
+  if (!channelName) throw new AppError('Channel name is required', 400);
+  const userID = (() => {
+  const { userID } = req.params;
+  if (!userID) {
+    throw new AppError("userID is required", 400);
+  }
+  return BigInt(userID);
+})()
+;
   const channel = await channelService.getChannelByNameAndUserService(channelName, userID);
   const safe = sanitizeChannelForPublic(channel);
   try {
@@ -180,7 +218,7 @@ export const getChannelByNameAndUser = asyncHandler(async (req: Request, res: Re
 }
 );
 
-export const getMyChannel = asyncHandler(async (req: Request, res: Response) => {
+export const getMyChannel = asyncHandler(async (req: AuthRequest, res: Response) => {
   const userID = BigInt(String(req.user!.id));
   const channel = await channelService.getUserChannel(userID);
   if (!channel) {
@@ -193,8 +231,9 @@ export const getMyChannel = asyncHandler(async (req: Request, res: Response) => 
   res.json(toJSON(safe));
 });
 
-export const getChannelStats = asyncHandler(async (req: Request, res: Response) => {
+export const getChannelStats = asyncHandler(async (req: AuthRequest, res: Response) => {
   const idParam = req.params.channelID;
+  if (!idParam) throw new AppError('Channel ID is required', 400);
   let channel;
 
   // Try finding by publicID first

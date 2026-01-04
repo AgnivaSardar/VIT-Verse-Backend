@@ -1,5 +1,5 @@
 // src/modules/videos/video.meilisearch.ts
-import { videoIndex } from '../../config/meilisearch';
+import { videoIndex } from '../../config/meilisearch.js';
 
 export interface VideoSearchDocument {
   vidID: string;

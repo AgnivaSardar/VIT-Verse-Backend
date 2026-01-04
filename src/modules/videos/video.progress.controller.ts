@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
-import { redis } from '../../config/redis';
-import { AppError } from '../../common/errors';
+import { redis } from '../../config/redis.js';
+import { AppError } from '../../common/errors.js';
+import { AuthRequest } from '../../middlewares/auth.middleware.js';
 
 // GET /api/videos/progress/:uploadId
-export const getVideoUploadProgressHandler = async (req: Request, res: Response) => {
+export const getVideoUploadProgressHandler = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
     const { uploadId } = req.params;

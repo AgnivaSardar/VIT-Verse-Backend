@@ -1,4 +1,4 @@
-import { prisma } from "../../config/prisma";
+import { prisma } from "../../config/prisma.js";
 
 export async function getTeacherByID(id: bigint) {
   return prisma.teacher.findUnique({

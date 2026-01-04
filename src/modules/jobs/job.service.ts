@@ -1,6 +1,6 @@
 // src/modules/jobs/job.service.ts
-import { jobRepository } from './job.repository';
-import { AppError } from '../../common/errors';
+import { jobRepository } from './job.repository.js';
+import { AppError } from '../../common/errors.js';
 
 export async function createTranscodeJobService(payload: object): Promise<void> {
   try {

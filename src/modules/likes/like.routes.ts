@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { LikeController } from "./like.controller";
-import { requireAuth } from "../../middlewares/auth.middleware";
+import { LikeController } from "./like.controller.js";
+import { requireAuth } from "../../middlewares/auth.middleware.js";
 
 const router = Router();
 const likeController = LikeController;

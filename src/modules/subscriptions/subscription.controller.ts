@@ -1,7 +1,8 @@
 import { Request,Response } from "express";
-import * as subscribeService from "./subscription.service";
-import { CreateSubscriptionRequest, DeleteSubscriptionRequest } from "./subscription.types";
-import { toJSON } from "../../common/utils";
+import * as subscribeService from "./subscription.service.js";
+import { CreateSubscriptionRequest, DeleteSubscriptionRequest } from "./subscription.types.js";
+import { toJSON } from "../../common/utils.js";
+import { AuthRequest } from "../../middlewares/auth.middleware.js";
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
     return (req: Request, res: Response, next: (err: any) => void) => {
@@ -26,7 +27,7 @@ export const unsubscribe = asyncHandler(async (req: Request, res: Response) => {
     res.json({ message: "Unsubscribed successfully" });
 });
 
-export const listMySubscriptions = asyncHandler(async (req: Request, res: Response) => {
+export const listMySubscriptions = asyncHandler(async (req: AuthRequest, res: Response) => {
     const userID = BigInt(String(req.user!.id));
     const page = Number(req.query.page || 1);
     const limit = Number(req.query.limit || 50);

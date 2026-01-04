@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { CommentController, listCommentsByVideo } from "./comment.controller";
-import { requireAuth } from "../../middlewares/auth.middleware";
+import { CommentController, listCommentsByVideo } from "./comment.controller.js";
+import { requireAuth } from "../../middlewares/auth.middleware.js";
 
 const router = Router();
 const commentController = CommentController;

@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { VideoStatsController } from "./videostats.controller";
-import { requireAuth, optionalAuth } from "../../middlewares/auth.middleware";
+import { VideoStatsController } from "./videostats.controller.js";
+import { requireAuth, optionalAuth } from "../../middlewares/auth.middleware.js";
 
 const router = Router();
 const videoStatsController = VideoStatsController;

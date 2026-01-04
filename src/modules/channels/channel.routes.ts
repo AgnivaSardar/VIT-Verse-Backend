@@ -1,7 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
-import { ChannelController } from "./channel.controller";
-import { requireAuth, optionalAuth } from "../../middlewares/auth.middleware";
+import { ChannelController } from "./channel.controller.js";
+import { requireAuth, optionalAuth } from "../../middlewares/auth.middleware.js";
 
 const router = Router();
 

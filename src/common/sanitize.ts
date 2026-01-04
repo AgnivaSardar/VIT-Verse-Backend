@@ -40,6 +40,18 @@ export function sanitizeUserForPublic(user: any) {
   return safe;
 }
 
+/**
+ * Return minimal user data for non-admin users
+ * Only returns userName and userID
+ */
+export function sanitizeUserForNonAdmin(user: any) {
+  if (!user || typeof user !== 'object') return null;
+  return {
+    userID: user.userID,
+    userName: user.userName,
+  };
+}
+
 export function sanitizeImageForPublic(image: any) {
   if (!image || typeof image !== 'object') return image;
   const safe = { ...image };

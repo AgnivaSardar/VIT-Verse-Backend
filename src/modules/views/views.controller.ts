@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
-import * as viewsService from "./views.service";
-import { CreateViewRequest } from "./views.types";
-import { toJSON } from "../../common/utils";
+import * as viewsService from "./views.service.js";
+import { CreateViewRequest } from "./views.types.js";
+import { toJSON } from "../../common/utils.js";
+import { AppError } from "../../common/errors.js";
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
     return (req: Request, res: Response, next: (err: any) => void) => {
@@ -16,20 +17,41 @@ export const createView = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const getView = asyncHandler(async (req: Request, res: Response) => {
-    const viewID = BigInt(req.params.viewID);
+    const viewID = (() => {
+  const { viewID } = req.params;
+  if (!viewID) {
+    throw new AppError("viewID is required", 400);
+  }
+  return BigInt(viewID);
+})()
+;
     const view = await viewsService.getViewByID(viewID);
     res.json(toJSON(view));
 });
 
 export const updateView = asyncHandler(async (req: Request, res: Response) => {
-    const viewID = BigInt(req.params.viewID);
+    const viewID = (() => {
+  const { viewID } = req.params;
+  if (!viewID) {
+    throw new AppError("viewID is required", 400);
+  }
+  return BigInt(viewID);
+})()
+;
     const input: Partial<{ watchTime?: number; ipAddress?: string; userAgent?: string; }> = req.body;
     await viewsService.updateViewService(viewID, input);
     res.json({ message: "View updated successfully" });
 });
 
 export const deleteView = asyncHandler(async (req: Request, res: Response) => {
-    const viewID = BigInt(req.params.viewID);
+    const viewID = (() => {
+  const { viewID } = req.params;
+  if (!viewID) {
+    throw new AppError("viewID is required", 400);
+  }
+  return BigInt(viewID);
+})()
+;
     await viewsService.deleteViewService(viewID);
     res.json({ message: "View deleted successfully" });
 });

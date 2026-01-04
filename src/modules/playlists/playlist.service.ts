@@ -1,7 +1,7 @@
-import { prisma } from "../../config/prisma";
-import { AppError } from "../../common/errors";
-import * as playlistRepo from "./playlist.repository";
-import { CreatePlaylistRequest, UpdatePlaylistRequest } from "./playlist.types";
+import { prisma } from "../../config/prisma.js";
+import { AppError } from "../../common/errors.js";
+import * as playlistRepo from "./playlist.repository.js";
+import { CreatePlaylistRequest, UpdatePlaylistRequest } from "./playlist.types.js";
 
 export async function createPlaylist(data: CreatePlaylistRequest) {
   return await playlistRepo.createPlaylist(data);

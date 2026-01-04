@@ -2,7 +2,7 @@
 import { Request, Response } from 'express';
 // Ensure the file './admin.service.ts' exists in the same directory as this controller.
 // If the file exists but the error persists, try importing with the extension:
-import * as adminService from './admin.service.ts';
+import * as adminService from './admin.service.js';
 import { z } from 'zod';
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
@@ -41,6 +41,10 @@ export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
 
 export const toggleUserStatus = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.params.id;
+  if (!userId) {
+    res.status(400).json({ message: 'User ID is required' });
+    return;
+  }
   const result = await adminService.toggleUserStatus(userId);
   res.json(result);
 });
@@ -60,6 +64,10 @@ export const getAllChannels = asyncHandler(async (req: Request, res: Response) =
 
 export const toggleChannelVisibility = asyncHandler(async (req: Request, res: Response) => {
   const channelId = req.params.id;
+  if (!channelId) {
+    res.status(400).json({ message: 'Channel ID is required' });
+    return;
+  }
   const result = await adminService.toggleChannelVisibility(channelId);
   res.json(result);
 });
@@ -79,6 +87,10 @@ export const getAllVideos = asyncHandler(async (req: Request, res: Response) => 
 
 export const toggleVideoVisibility = asyncHandler(async (req: Request, res: Response) => {
   const videoId = req.params.id;
+  if (!videoId) {
+    res.status(400).json({ message: 'Video ID is required' });
+    return;
+  }
   const result = await adminService.toggleVideoVisibility(videoId);
   res.json(result);
 });
@@ -98,6 +110,10 @@ export const getAllPlaylists = asyncHandler(async (req: Request, res: Response) 
 
 export const togglePlaylistVisibility = asyncHandler(async (req: Request, res: Response) => {
   const playlistId = req.params.id;
+  if (!playlistId) {
+    res.status(400).json({ message: 'Playlist ID is required' });
+    return;
+  }
   const result = await adminService.togglePlaylistVisibility(playlistId);
   res.json(result);
 });

@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
-import { uploadToS3 } from './src/config/s3.ts';
+import { uploadToS3 } from "./src/config/s3";
 import fs from 'fs';
 import path from 'path';
 import { execFile } from 'child_process';

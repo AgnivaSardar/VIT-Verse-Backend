@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import { AppError } from "../common/errors.ts";
-import { HTTP_STATUS } from "../common/httpStatus.ts";
+import { AppError } from "../common/errors.js";
+import { HTTP_STATUS } from "../common/httpStatus.js";
 
 export function errorHandler(
   err: Error,

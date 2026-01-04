@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { register, login, logout, verifyOTP, resendOTP, requestPasswordChange, changePassword } from "./auth.controller";
-import { loginLimiter, registerLimiter, passwordResetLimiter } from "../../middlewares/rateLimiter.middleware";
+import { register, login, logout, verifyOTP, resendOTP, requestPasswordChange, changePassword } from "./auth.controller.js";
+import { loginLimiter, registerLimiter, passwordResetLimiter } from "../../middlewares/rateLimiter.middleware.js";
 import cors from "cors";
 
 const router = Router();

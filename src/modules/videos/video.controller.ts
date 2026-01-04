@@ -1,22 +1,24 @@
 // src/modules/videos/video.controller.ts
 import type { Request, Response } from 'express';
-import { videoService } from './video.service';
-import type { CreateVideoInput } from './video.types';
-import { AppError } from '../../common/errors';
-import { toJSON } from '../../common/utils';
-import { sanitizeVideoForPublic } from '../../common/sanitize';
-import { channelService } from '../channels/channel.service';
-import { getS3PublicUrl, isS3Configured } from '../../config/s3';
+import { videoService } from './video.service.js';
+import type { CreateVideoInput } from './video.types.js';
+import { AppError } from '../../common/errors.js';
+import { toJSON } from '../../common/utils.js';
+import { sanitizeVideoForPublic } from '../../common/sanitize.js';
+import { channelService } from '../channels/channel.service.js';
+import { getS3PublicUrl, isS3Configured } from '../../config/s3.js';
+import { AuthRequest } from '../../middlewares/auth.middleware.js';
 import fs from 'fs';
 import path from 'path';
-import { compressAndScaleVideo } from './video.compress';
-import { videoCompressionConfig } from '../../config/videoCompression';
+import { compressAndScaleVideo } from './video.compress.js';
+import { videoCompressionConfig } from '../../config/videoCompression.js';
 
 // Video handlers moved/merged during implementation
 
-export const deleteVideoHandler = async (req: Request, res: Response) => {
+export const deleteVideoHandler = async (req: AuthRequest, res: Response) => {
   try {
     const idParam = req.params.id;
+    if (!idParam) throw new AppError('Video ID is required', 400);
     let video;
 
     // Try finding by publicID first
@@ -125,7 +127,7 @@ const decorateVideoMedia = (video: any, baseUrl: string) => {
 };
 
 // Compress and scale uploaded video before storage
-export const uploadVideoHandler = async (req: Request, res: Response) => {
+export const uploadVideoHandler = async (req: AuthRequest, res: Response) => {
   try {
     const file = (req as any).files?.video?.[0] || req.file;
     const thumbFile = (req as any).files?.thumbnail?.[0];
@@ -224,7 +226,7 @@ export const uploadVideoHandler = async (req: Request, res: Response) => {
     if (storageType === 's3' && video.s3KeyOriginal) {
       try {
         console.log('📥 Downloading video from S3 for processing...');
-        const { downloadFromS3 } = await import('../../config/s3');
+        const { downloadFromS3 } = await import('../../config/s3.js');
         const videoBuffer = await downloadFromS3(video.s3KeyOriginal);
 
         // Save to temp location
@@ -336,6 +338,7 @@ export const uploadVideoHandler = async (req: Request, res: Response) => {
 export const getVideoHandler = async (req: Request, res: Response) => {
   try {
     const idParam = req.params.id;
+    if (!idParam) throw new AppError('Video ID is required', 400);
     let video;
 
     // Try finding by publicID first
@@ -422,6 +425,7 @@ export const searchVideosByTitleHandler = async (req: Request, res: Response) =>
 export const updateVideoHandler = async (req: Request, res: Response) => {
   try {
     const idParam = req.params.id;
+    if (!idParam) throw new AppError('Video ID is required', 400);
     let video_initial;
 
     // Try finding by publicID first
@@ -488,7 +492,7 @@ export const updateVideoHandler = async (req: Request, res: Response) => {
   }
 };
 
-export const getMyVideosHandler = async (req: Request, res: Response) => {
+export const getMyVideosHandler = async (req: AuthRequest, res: Response) => {
   try {
     const userID = BigInt(String(req.user!.id));
     const { page = '1', limit = '20' } = req.query;
@@ -516,6 +520,7 @@ export const getMyVideosHandler = async (req: Request, res: Response) => {
 export const getVideoStreamUrlHandler = async (req: Request, res: Response) => {
   try {
     const idParam = req.params.id;
+    if (!idParam) throw new AppError('Video ID is required', 400);
     let video;
 
     // Try finding by publicID first

@@ -1,7 +1,7 @@
 // src/modules/admin/admin.service.ts
-import { prisma } from '../../config/prisma';
-import { AppError } from '../../common/errors';
-import { emailService } from '../../services/email.service';
+import { prisma } from '../../config/prisma.js';
+import { AppError } from '../../common/errors.js';
+import { emailService } from '../../services/email.service.js';
 import bcrypt from 'bcryptjs';
 
 interface PaginationParams {

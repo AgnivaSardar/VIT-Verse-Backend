@@ -1,4 +1,4 @@
-import { prisma } from '../../config/prisma';
+import { prisma } from '../../config/prisma.js';
 
 /**
  * Search videos by title using simple substring matching

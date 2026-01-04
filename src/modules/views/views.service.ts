@@ -1,7 +1,7 @@
-import { AppError } from "../../common/errors";
-import * as viewsRepo from "./views.repository";
+import { AppError } from "../../common/errors.js";
+import * as viewsRepo from "./views.repository.js";
 
-import { CreateViewRequest, UpdateChannelRequest, ViewListResponse, ViewResponse } from "./views.types";
+import { CreateViewRequest, UpdateChannelRequest, ViewListResponse, ViewResponse } from "./views.types.js";
 export async function createViewService(data: CreateViewRequest): Promise<void> {
     await viewsRepo.createView({
         ...data,

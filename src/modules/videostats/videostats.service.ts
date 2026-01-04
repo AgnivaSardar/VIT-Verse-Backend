@@ -1,6 +1,6 @@
-import { AppError } from "../../common/errors";
-import * as videoStatsRepo from "./videostats.repository";
-import { VideoStats } from "./videostats.types";
+import { AppError } from "../../common/errors.js";
+import * as videoStatsRepo from "./videostats.repository.js";
+import { VideoStats } from "./videostats.types.js";
 
 export async function getVideoStatsByVidID(vidID: bigint): Promise<VideoStats> {
   const stats = await videoStatsRepo.getVideoStatsByVidID(vidID);

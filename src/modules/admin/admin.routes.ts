@@ -1,8 +1,8 @@
 // src/modules/admin/admin.routes.ts
 import { Router } from 'express';
-import { requireAuth } from '../../middlewares/auth.middleware';
-import { requireAdminOrSuperAdmin } from '../../middlewares/admin.middleware';
-import * as adminController from './admin.controller';
+import { requireAuth } from '../../middlewares/auth.middleware.js';
+import { requireAdminOrSuperAdmin } from '../../middlewares/admin.middleware.js';
+import * as adminController from './admin.controller.js';
 
 const router = Router();
 

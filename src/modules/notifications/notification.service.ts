@@ -1,8 +1,8 @@
-import { AppError } from '../../common/errors';
-import * as notificationRepo from './notification.repository';
-import { getIO } from '../realtime/socket.server';
-import { socketEvents } from '../realtime/socket.handlers';
-import { Notification } from './notification.types';
+import { AppError } from '../../common/errors.js';
+import * as notificationRepo from './notification.repository.js';
+import { getIO } from '../realtime/socket.server.js';
+import { socketEvents } from '../realtime/socket.handlers.js';
+import { Notification } from './notification.types.js';
 
 export async function getNotificationsByUserID(userID: bigint): Promise<Notification[]> {
     return notificationRepo.getNotificationsByUserID(userID);

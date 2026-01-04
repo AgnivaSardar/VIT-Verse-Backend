@@ -1,8 +1,8 @@
 // src/modules/realtime/socket.server.ts
 import { Server } from 'socket.io';
 import type { Server as HTTPServer } from 'http';
-import type { VITVerseIO, VITVerseSocket } from './socket.types';
-import { registerSocketHandlers } from './socket.handlers';
+import type { VITVerseIO, VITVerseSocket } from './socket.types.js';
+import { registerSocketHandlers } from './socket.handlers.js';
 
 let ioInstance: VITVerseIO | null = null;
 

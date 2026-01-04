@@ -1,8 +1,10 @@
 import { Request, Response } from "express";
-import * as userService from "./user.service";
-import { CreateUserRequest, UpdateUserRequest } from "./user.types";
-import { toJSON } from "../../common/utils";
-import { AuthRequest } from "../../middlewares/auth.middleware";
+import * as userService from "./user.service.js";
+import { CreateUserRequest, UpdateUserRequest } from "./user.types.js";
+import { toJSON } from "../../common/utils.js";
+import { AuthRequest } from "../../middlewares/auth.middleware.js";
+import { AppError } from "../../common/errors.js";
+import { sanitizeUserForNonAdmin, sanitizeUser } from "../../common/sanitize.js";
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
   return (req: Request, res: Response, next: (err: any) => void) => {
@@ -18,13 +20,39 @@ export const createUser = asyncHandler(async (req: Request, res: Response) => {
 );
 
 export const getUser = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const userID = BigInt(req.params.userID);
+  const userID = (() => {
+  const { userID } = req.params;
+  if (!userID) {
+    throw new AppError("userID is required", 400);
+  }
+  return BigInt(userID);
+})()
+;
   const user = await userService.getUserByID(userID);
-  res.json(toJSON(user));
+  
+  // Check if the requester is a super admin
+  const isSuperAdmin = req.user?.isSuperAdmin === true;
+  
+  // Non-super-admins only get minimal user data (userName and userID)
+  if (!isSuperAdmin) {
+    const minimalData = sanitizeUserForNonAdmin(user);
+    res.json(toJSON(minimalData));
+    return;
+  }
+  
+  // Super admins get full user data (but still sanitized to remove passwords)
+  res.json(toJSON(sanitizeUser(user)));
 });
 
 export const updateUser = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const userID = BigInt(req.params.userID);
+  const userID = (() => {
+  const { userID } = req.params;
+  if (!userID) {
+    throw new AppError("userID is required", 400);
+  }
+  return BigInt(userID);
+})()
+;
   // Users can only update their own profile
   if (req.user!.id !== req.params.userID && req.user!.role !== 'admin') {
     res.status(403).json({ error: "Forbidden: You can only update your own profile" });
@@ -42,7 +70,14 @@ export const deleteUser = asyncHandler(async (req: AuthRequest, res: Response) =
     res.status(403).json({ error: "Forbidden: Only admins can delete users" });
     return;
   }
-  const userID = BigInt(req.params.userID);
+  const userID = (() => {
+  const { userID } = req.params;
+  if (!userID) {
+    throw new AppError("userID is required", 400);
+  }
+  return BigInt(userID);
+})()
+;
   await userService.deleteUser(userID);
   res.json({ message: "User deleted successfully" });
 });
@@ -66,7 +101,14 @@ export const activateUser = asyncHandler(async (req: AuthRequest, res: Response)
     res.status(403).json({ error: "Forbidden: Only admins can manage user activation" });
     return;
   }
-  const userID = BigInt(req.params.userID);
+  const userID = (() => {
+  const { userID } = req.params;
+  if (!userID) {
+    throw new AppError("userID is required", 400);
+  }
+  return BigInt(userID);
+})()
+;
   await userService.activateUser(userID);
   res.json({ message: "User activated successfully" });
 });
@@ -77,7 +119,14 @@ export const deactivateUser = asyncHandler(async (req: AuthRequest, res: Respons
     res.status(403).json({ error: "Forbidden: Only admins can manage user activation" });
     return;
   }
-  const userID = BigInt(req.params.userID);
+  const userID = (() => {
+  const { userID } = req.params;
+  if (!userID) {
+    throw new AppError("userID is required", 400);
+  }
+  return BigInt(userID);
+})()
+;
   await userService.deactivateUser(userID);
   res.json({ message: "User deactivated successfully" });
 });

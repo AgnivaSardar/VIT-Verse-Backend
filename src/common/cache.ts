@@ -1,6 +1,6 @@
 // Simple in-memory response cache with TTL
 
-import { redis } from '../config/redis';
+import { redis } from '../config/redis.js';
 import type { Request, Response, NextFunction } from 'express';
 
 export function cacheResponse(ttlSeconds: number, keyBuilder?: (req: Request) => string) {
@@ -18,17 +18,15 @@ export function cacheResponse(ttlSeconds: number, keyBuilder?: (req: Request) =>
     }
 
     const originalJson = res.json.bind(res);
-    res.json = async (body: any) => {
+    res.json = ((body: any) => {
       // Only cache successful responses
       if (res.statusCode >= 200 && res.statusCode < 300) {
-        try {
-          await redis.set(key, JSON.stringify(body), 'EX', ttlSeconds);
-        } catch (err) {
+        redis.set(key, JSON.stringify(body), 'EX', ttlSeconds).catch((err) => {
           console.warn('Redis cache set failed:', err);
-        }
+        });
       }
       return originalJson(body);
-    };
+    }) as any;
 
     next();
   };

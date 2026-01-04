@@ -1,5 +1,5 @@
 // src/modules/realtime/socket.handlers.ts
-import type { VITVerseIO, VITVerseSocket } from './socket.types';
+import type { VITVerseIO, VITVerseSocket } from './socket.types.js';
 
 /**
  * Helper: room name for a user

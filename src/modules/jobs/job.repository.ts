@@ -1,5 +1,5 @@
 // src/modules/jobs/job.repository.ts
-import { prisma } from '../../config/prisma';
+import { prisma } from '../../config/prisma.js';
 import { Prisma } from '@prisma/client';
 
 export const jobRepository = {

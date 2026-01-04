@@ -1,12 +1,12 @@
 // src/modules/auth/auth.service.ts
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
-import { prisma } from '../../config/prisma';
-import { AppError, ValidationError } from '../../common/errors';
-import { config } from '../../config/env';
-import * as authRepo from './auth.repository';
-import { LoginRequest, RegisterRequest } from './auth.types';
-import { sendOTP, verifyOTP, sendWelcomeEmail } from '../../services/email.service';
+import { prisma } from '../../config/prisma.js';
+import { AppError, ValidationError } from '../../common/errors.js';
+import { config } from '../../config/env.js';
+import * as authRepo from './auth.repository.js';
+import { LoginRequest, RegisterRequest } from './auth.types.js';
+import { sendOTP, verifyOTP, sendWelcomeEmail } from '../../services/email.service.js';
 
 export interface AuthUser {
   id: string;   // matches JWT payload + index.d.ts UserPayload

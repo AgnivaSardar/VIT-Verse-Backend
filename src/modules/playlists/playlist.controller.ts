@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
-import * as playlistService from "./playlist.service";
-import { videoService } from "../videos/video.service";
-import { CreatePlaylistRequest, UpdatePlaylistRequest } from "./playlist.types";
-import { toJSON } from "../../common/utils";
-import { AuthRequest } from "../../middlewares/auth.middleware";
-import { AppError } from "../../common/errors";
+import * as playlistService from "./playlist.service.js";
+import { videoService } from "../videos/video.service.js";
+import { CreatePlaylistRequest, UpdatePlaylistRequest } from "./playlist.types.js";
+import { toJSON } from "../../common/utils.js";
+import { AuthRequest } from "../../middlewares/auth.middleware.js";
+import { AppError } from "../../common/errors.js";
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
     return (req: Request, res: Response, next: (err: any) => void) => {
@@ -27,6 +27,7 @@ export const createPlaylist = asyncHandler(async (req: AuthRequest, res: Respons
 
 export const getPlaylist = asyncHandler(async (req: Request, res: Response) => {
     const idParam = req.params.playlistID;
+    if (!idParam) throw new AppError("Playlist ID is required", 400);
     let playlist;
 
     // Try finding by publicID first
@@ -56,6 +57,7 @@ export const getAllPublicPlaylists = asyncHandler(async (req: Request, res: Resp
 
 export const updatePlaylist = asyncHandler(async (req: Request, res: Response) => {
     const idParam = req.params.playlistID;
+    if (!idParam) throw new AppError("Playlist ID is required", 400);
     let playlist;
 
     // Try finding by publicID first
@@ -77,6 +79,7 @@ export const updatePlaylist = asyncHandler(async (req: Request, res: Response) =
 
 export const deletePlaylist = asyncHandler(async (req: Request, res: Response) => {
     const idParam = req.params.playlistID;
+    if (!idParam) throw new AppError("Playlist ID is required", 400);
     let playlist;
 
     // Try finding by publicID first
@@ -116,7 +119,14 @@ export const addVideoToPlaylist = asyncHandler(async (req: AuthRequest, res: Res
 });
 
 export const removeVideoFromPlaylist = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const playlistVideoID = BigInt(req.params.playlistVideoID);
+    const playlistVideoID = (() => {
+  const { playlistVideoID } = req.params;
+  if (!playlistVideoID) {
+    throw new AppError("playlistVideoID is required", 400);
+  }
+  return BigInt(playlistVideoID);
+})()
+;
     await playlistService.removeVideoFromPlaylist(playlistVideoID);
     res.json({ message: "Video removed from playlist" });
 });

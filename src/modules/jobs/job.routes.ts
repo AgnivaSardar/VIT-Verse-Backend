@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { createTranscodeJob } from "./job.controller";
-import { requireAuth } from "../../middlewares/auth.middleware";
+import { createTranscodeJob } from "./job.controller.js";
+import { requireAuth } from "../../middlewares/auth.middleware.js";
 const router = Router();
 
 router.post("/transcode", requireAuth, createTranscodeJob);

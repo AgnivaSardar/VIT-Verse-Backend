@@ -1,11 +1,11 @@
-import { AppError } from '../../common/errors';
-import * as likeRepo from './like.repository';
-import { getIO } from "../realtime/socket.server";
-import { socketEvents } from "../realtime/socket.handlers";
+import { AppError } from '../../common/errors.js';
+import * as likeRepo from './like.repository.js';
+import { getIO } from "../realtime/socket.server.js";
+import { socketEvents } from "../realtime/socket.handlers.js";
 // Adjust the import based on the actual export from user.repository.ts
-import { userRepository } from "../users/user.repository";
+import { userRepository } from "../users/user.repository.js";
 // If the export is named differently, for example 'UserRepository', use:
-// import { UserRepository } from "../users/user.repository";
+// import { UserRepository } from "../users/user.repository.js";
 
 /**
  * Add a like to a video

@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
-import * as notificationService from "./notification.service";
-import { UpdateNotificationRequest } from "./notification.types";
-import { ValidationError } from "../../common/errors";
-import { toJSON } from "../../common/utils";
+import * as notificationService from "./notification.service.js";
+import { UpdateNotificationRequest } from "./notification.types.js";
+import { ValidationError, AppError } from "../../common/errors.js";
+import { toJSON } from "../../common/utils.js";
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
     return (req: Request, res: Response, next: (err: any) => void) => {
@@ -11,14 +11,28 @@ function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
 }
 
 export const getNotificationsByUserID = asyncHandler(async (req: Request, res: Response) => {
-    const userID = BigInt(req.params.userID);
+    const userID = (() => {
+  const { userID } = req.params;
+  if (!userID) {
+    throw new AppError("userID is required", 400);
+  }
+  return BigInt(userID);
+})()
+;
     const notifications = await notificationService.getNotificationsByUserID(userID);
     res.json(toJSON(notifications));
 }
 );
 
 export const markNotificationAsRead = asyncHandler(async (req: Request, res: Response) => {
-    const notifID = BigInt(req.params.notifID);
+    const notifID = (() => {
+  const { notifID } = req.params;
+  if (!notifID) {
+    throw new AppError("notifID is required", 400);
+  }
+  return BigInt(notifID);
+})()
+;
     await notificationService.markNotificationAsRead(notifID);
     res.json({ message: "Notification marked as read successfully" });
 }
@@ -47,28 +61,56 @@ export const createNotification = asyncHandler(async (req: Request, res: Respons
 });
 
 export const deleteNotification = asyncHandler(async (req: Request, res: Response) => {
-    const notifID = BigInt(req.params.notifID);
+    const notifID = (() => {
+  const { notifID } = req.params;
+  if (!notifID) {
+    throw new AppError("notifID is required", 400);
+  }
+  return BigInt(notifID);
+})()
+;
     await notificationService.deleteNotification(notifID);
     res.json({ message: "Notification deleted successfully" });
 }
 );
 
 export const deleteNotificationsByUserID = asyncHandler(async (req: Request, res: Response) => {
-    const userID = BigInt(req.params.userID);
+    const userID = (() => {
+  const { userID } = req.params;
+  if (!userID) {
+    throw new AppError("userID is required", 400);
+  }
+  return BigInt(userID);
+})()
+;
     await notificationService.deleteNotificationsByUserID(userID);
     res.json({ message: "All notifications for user deleted successfully" });
 }
 );
 
 export const getNotificationByID = asyncHandler(async (req: Request, res: Response) => {
-    const notifID = BigInt(req.params.notifID);
+    const notifID = (() => {
+  const { notifID } = req.params;
+  if (!notifID) {
+    throw new AppError("notifID is required", 400);
+  }
+  return BigInt(notifID);
+})()
+;
     const notification = await notificationService.getNotificationByID(notifID);
     res.json(notification);
 }
 );
 
 export const updateNotification = asyncHandler(async (req: Request, res: Response) => {
-    const notifID = BigInt(req.params.notifID);
+    const notifID = (() => {
+  const { notifID } = req.params;
+  if (!notifID) {
+    throw new AppError("notifID is required", 400);
+  }
+  return BigInt(notifID);
+})()
+;
     const input: UpdateNotificationRequest = req.body;
     await notificationService.updateNotification(notifID, input);
     res.json({ message: "Notification updated successfully" });

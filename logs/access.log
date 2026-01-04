@@ -9058,3 +9058,4 @@
 2025-12-30 20:06:36 [INFO]: GET /api/tags/popular 200 - 312.408ms (IP: 223.185.34.0)
 2025-12-30 20:07:07 [INFO]: POST /api/auth/request-password-change 200 - 1334.830ms (IP: 223.185.34.0)
 2025-12-30 20:09:37 [INFO]: POST /api/auth/request-password-change 200 - 1233.638ms (IP: 223.185.34.0)
+2026-01-04 23:47:24 [INFO]: GET /health 200 - 17.451ms (IP: 127.0.0.1)

@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { UserController } from "./user.controller";
-import { requireAuth } from "../../middlewares/auth.middleware";
-import { accountManagementLimiter } from "../../middlewares/rateLimiter.middleware";
+import { UserController } from "./user.controller.js";
+import { requireAuth } from "../../middlewares/auth.middleware.js";
+import { accountManagementLimiter } from "../../middlewares/rateLimiter.middleware.js";
 
 const router = Router();
 const userController = UserController;
