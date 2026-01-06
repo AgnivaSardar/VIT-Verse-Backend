@@ -6,7 +6,7 @@ import { AppError } from '../../common/errors.js';
 import { toJSON } from '../../common/utils.js';
 import { sanitizeVideoForPublic } from '../../common/sanitize.js';
 import { channelService } from '../channels/channel.service.js';
-import { getS3PublicUrl, isS3Configured } from '../../config/s3.js';
+import { getS3PublicUrl, isS3Configured, deleteFromS3 } from '../../config/s3.js';
 import { AuthRequest } from '../../middlewares/auth.middleware.js';
 import fs from 'fs';
 import path from 'path';
@@ -14,6 +14,39 @@ import { compressAndScaleVideo } from './video.compress.js';
 import { videoCompressionConfig } from '../../config/videoCompression.js';
 
 // Video handlers moved/merged during implementation
+
+type UploadingRequest = AuthRequest & { uploadCleanupPaths?: string[] };
+
+const cleanupLocalUploadFiles = (req: UploadingRequest, extraPaths: Array<string | null | undefined> = []) => {
+  try {
+    const files: any = (req as any).files || {};
+    const candidates = [
+      ...(files.video || []),
+      ...(files.thumbnail || []),
+    ];
+    if ((req as any).file) {
+      candidates.push((req as any).file);
+    }
+
+    const paths = [
+      ...(req.uploadCleanupPaths || []),
+      ...candidates.map((f: any) => f?.path),
+      ...extraPaths,
+    ].filter((p): p is string => typeof p === 'string' && !!p);
+
+    paths.forEach((p) => {
+      try {
+        if (fs.existsSync(p)) {
+          fs.unlinkSync(p);
+        }
+      } catch (err) {
+        console.warn('Failed to delete temp upload file', p, err);
+      }
+    });
+  } catch (err) {
+    console.warn('Temp upload cleanup error', err);
+  }
+};
 
 export const deleteVideoHandler = async (req: AuthRequest, res: Response) => {
   try {
@@ -128,9 +161,40 @@ const decorateVideoMedia = (video: any, baseUrl: string) => {
 
 // Compress and scale uploaded video before storage
 export const uploadVideoHandler = async (req: AuthRequest, res: Response) => {
+  const uploadReq = req as UploadingRequest;
+  const file = (req as any).files?.video?.[0] || req.file;
+  const thumbFile = (req as any).files?.thumbnail?.[0];
+
+  let tempCompressedPath: string | null = null;
+  let videoFilePath: string = '';
+  let shouldCleanupTempFile = false;
+  let processedFilePath = '';
+  let processedFileBuffer: Buffer | undefined = undefined;
+  let processedFileSize = 0;
+  let processedMimeType = '';
+  let createdVideo: any = null;
+  let uploadedS3Key: string | null = null;
+  const storageType: 'local' | 's3' = process.env.STORAGE_TYPE === 's3' ? 's3' : 'local';
+
+  const cleanupOnFailure = async () => {
+    cleanupLocalUploadFiles(uploadReq, [tempCompressedPath, videoFilePath]);
+    if (storageType === 's3' && uploadedS3Key) {
+      try {
+        await deleteFromS3(uploadedS3Key);
+      } catch (err) {
+        console.warn('S3 cleanup failed for canceled upload', err);
+      }
+    }
+    if (createdVideo?.vidID) {
+      try {
+        await videoService.deleteVideo(BigInt(createdVideo.vidID));
+      } catch (err) {
+        console.warn('Failed to remove partial video record', err);
+      }
+    }
+  };
+
   try {
-    const file = (req as any).files?.video?.[0] || req.file;
-    const thumbFile = (req as any).files?.thumbnail?.[0];
     if (!file) {
       throw new AppError('No video file uploaded', 400);
     }
@@ -147,11 +211,10 @@ export const uploadVideoHandler = async (req: AuthRequest, res: Response) => {
       preset,
     } = req.body || {};
 
-    let processedFilePath = file.path;
-    let processedFileBuffer: Buffer | undefined = undefined;
-    let processedFileSize = file.size;
-    let processedMimeType = file.mimetype;
-    let tempCompressedPath: string | null = null;
+    processedFilePath = file.path;
+    processedFileSize = file.size;
+    processedMimeType = file.mimetype;
+
     try {
       const ext = path.extname(file.originalname) || '.mp4';
       const tempDir = path.join(process.cwd(), 'uploads', 'temp');
@@ -184,10 +247,6 @@ export const uploadVideoHandler = async (req: AuthRequest, res: Response) => {
       throw new AppError('You must create a channel before uploading videos', 403);
     }
 
-    const storageType: 'local' | 's3' =
-      process.env.STORAGE_TYPE === 's3' ? 's3' : 'local';
-
-
     const input = await videoService.parseUploadInput(
       req.body,
       storageType === 'local' ? processedFilePath : file.filename!,
@@ -216,11 +275,14 @@ export const uploadVideoHandler = async (req: AuthRequest, res: Response) => {
       throw new AppError('Failed to create video', 500);
     }
 
+    createdVideo = video;
+    uploadedS3Key = storageType === 's3' ? video.s3KeyOriginal || null : null;
+
     // Post-process: compute duration & generate thumbnail if missing
     const storageMode: 'local' | 's3' = process.env.STORAGE_TYPE === 's3' ? 's3' : 'local';
 
-    let videoFilePath = file.path; // Local path for processing
-    let shouldCleanupTempFile = false;
+    videoFilePath = file.path; // Local path for processing
+    shouldCleanupTempFile = false;
 
     // If video is on S3, download it temporarily for processing
     if (storageType === 's3' && video.s3KeyOriginal) {
@@ -326,6 +388,7 @@ export const uploadVideoHandler = async (req: AuthRequest, res: Response) => {
       video: toJSON(sanitizeVideoForPublic(decorateVideoMedia(video as any, process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`))),
     });
   } catch (err: any) {
+    await cleanupOnFailure();
     if (err instanceof AppError) {
       res.status(err.statusCode).json({ message: err.message });
     } else {

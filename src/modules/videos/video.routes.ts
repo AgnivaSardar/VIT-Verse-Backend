@@ -1,5 +1,6 @@
 // src/modules/videos/video.routes.ts
 import { Router } from 'express';
+import type { Request, RequestHandler } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -29,6 +30,9 @@ if (!fs.existsSync(thumbDir)) {
   fs.mkdirSync(thumbDir, { recursive: true });
 }
 
+type UploadRequest = Request & { uploadCleanupPaths?: string[] };
+
+// Collect target file paths so we can delete them if the client aborts the upload.
 const storage = multer.diskStorage({
   destination: (_req, file, cb) => {
     if (file.fieldname === 'thumbnail') {
@@ -36,11 +40,54 @@ const storage = multer.diskStorage({
     }
     return cb(null, uploadDir);
   },
-  filename: (_req, file, cb) => {
+  filename: (req, file, cb) => {
     const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, `${unique}${path.extname(file.originalname)}`);
+    const finalName = `${unique}${path.extname(file.originalname)}`;
+    const targetPath = path.join(file.fieldname === 'thumbnail' ? thumbDir : uploadDir, finalName);
+    const uploadReq = req as UploadRequest;
+    if (!uploadReq.uploadCleanupPaths) uploadReq.uploadCleanupPaths = [];
+    uploadReq.uploadCleanupPaths.push(targetPath);
+    cb(null, finalName);
   },
 });
+
+const cleanupUploadedFiles = (req: UploadRequest) => {
+  const files: any = (req as any).files || {};
+  const candidates = [
+    ...(files.video || []),
+    ...(files.thumbnail || []),
+  ];
+  if ((req as any).file) {
+    candidates.push((req as any).file);
+  }
+  const paths = [
+    ...(req.uploadCleanupPaths || []),
+    ...candidates
+      .map((f: any) => f?.path)
+      .filter((p: string | undefined): p is string => typeof p === 'string'),
+  ];
+
+  paths.forEach((p) => {
+    try {
+      if (p && fs.existsSync(p)) {
+        fs.unlinkSync(p);
+      }
+    } catch (err) {
+      console.warn('Failed to clean aborted upload temp file:', err);
+    }
+  });
+};
+
+// If the client aborts the request mid-upload, immediately delete any temp files created so far.
+const registerAbortCleanup: RequestHandler = (req, res, next) => {
+  const uploadReq = req as UploadRequest;
+  const abortHandler = () => cleanupUploadedFiles(uploadReq);
+  req.on('aborted', abortHandler);
+  res.on('finish', () => {
+    req.removeListener('aborted', abortHandler);
+  });
+  next();
+};
 
 const upload = multer({
   storage,
@@ -64,6 +111,7 @@ const upload = multer({
 router.post(
   '/upload',
   requireAuth,
+  registerAbortCleanup,
   upload.fields([
     { name: 'video', maxCount: 1 },
     { name: 'thumbnail', maxCount: 1 },

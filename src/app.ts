@@ -56,14 +56,24 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-const allowedOrigins = process.env.CLIENT_ORIGIN?.split(',') || ['https://18.60.156.89', 'http://18.60.156.89', 'http://localhost:3000', 'https://localhost:3000', '*'];
+const allowedOrigins = [
+  'https://vit-verse-zeta.vercel.app',
+  'https://api.vitverse.abrdns.com',
+];
 console.log('🔐 CORS allowed origins:', allowedOrigins);
 
 app.use(cors({
-  origin: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-bypass-rate-limit', 'Cache-Control', 'Pragma'],
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true); // allow curl/mobile/undefined-origins
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('CORS blocked'));
+  },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-bypass-rate-limit'],
+  exposedHeaders: ['Content-Length', 'Content-Range'],
   maxAge: 600,
 }));
 
@@ -115,20 +125,10 @@ if (process.env.REQUIRE_API_SIGNING === 'true') {
 // === STATIC FILES - Serve uploaded videos ===
 const uploadsPath = path.join(process.cwd(), 'uploads');
 app.use('/uploads', express.static(uploadsPath, {
-  setHeaders: (res, _path, stat) => {
-    const originHeader = res.req?.headers.origin;
-    const matchedOrigin = originHeader && allowedOrigins.includes(originHeader) ? originHeader : '*';
-    res.set('Access-Control-Allow-Origin', matchedOrigin);
-    res.set('Access-Control-Allow-Credentials', 'true');
-    res.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-    res.set('Access-Control-Allow-Headers', 'Range, Content-Type, Accept');
-    res.set('Access-Control-Expose-Headers', 'Content-Length, Content-Range, Accept-Ranges');
-    res.set('Accept-Ranges', 'bytes');
-    res.set('Cache-Control', 'public, max-age=31536000');
-    if (stat && stat.size) {
-      res.set('Content-Length', stat.size.toString());
-    }
-  }
+  acceptRanges: true,
+  setHeaders(res) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  },
 }));
 console.log('📁 Serving uploads from:', uploadsPath);
 
