@@ -124,6 +124,44 @@ export const listNotifications = asyncHandler(async (req: Request, res: Response
 }
 );
 
+export const getUnreadCount = asyncHandler(async (req: Request, res: Response) => {
+    const userID = (() => {
+        const { userID } = req.params;
+        if (!userID) {
+            throw new AppError("userID is required", 400);
+        }
+        return BigInt(userID);
+    })();
+    const count = await notificationService.getUnreadCount(userID);
+    res.json({ unreadCount: count });
+});
+
+export const markAllAsRead = asyncHandler(async (req: Request, res: Response) => {
+    const userID = (() => {
+        const { userID } = req.params;
+        if (!userID) {
+            throw new AppError("userID is required", 400);
+        }
+        return BigInt(userID);
+    })();
+    await notificationService.markAllAsRead(userID);
+    res.json({ message: "All notifications marked as read" });
+});
+
+export const sendAdminNotification = asyncHandler(async (req: Request, res: Response) => {
+    const { recipientUserID, message, priority } = req.body;
+    
+    if (!recipientUserID || !message) {
+        throw new AppError("recipientUserID and message are required", 400);
+    }
+    
+    const adminID = BigInt((req as any).user?.id || 0);
+    const recipientID = BigInt(recipientUserID);
+    
+    await notificationService.sendAdminNotification(adminID, recipientID, message, priority || 'normal');
+    res.status(201).json({ message: "Admin notification sent successfully" });
+});
+
 export const NotificationController = {
     getNotificationsByUserID,
     markNotificationAsRead,
@@ -133,4 +171,7 @@ export const NotificationController = {
     getNotificationByID,
     updateNotification,
     listNotifications,
+    getUnreadCount,
+    markAllAsRead,
+    sendAdminNotification,
 };

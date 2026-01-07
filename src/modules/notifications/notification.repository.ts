@@ -15,17 +15,25 @@ export async function getNotificationsByUserID(userID: bigint) {
 
 export async function createNotification(data: {
     userID: bigint;
-    type: 'message' | 'subscribe_request' | 'system_alert';
-    entityID: bigint;
+    type: string;
+    entityID?: bigint | null;
     message: string;
+    priority?: string;
+    category?: string;
+    metadata?: any;
+    createdBy?: bigint | null;
 }) {
     return prisma.notifications.create({
         data: {
             userID: data.userID,
             type: data.type,
-            entityID: data.entityID,
+            entityID: data.entityID || null,
             message: data.message,
             isRead: false,
+            priority: data.priority || 'normal',
+            category: data.category || null,
+            metadata: data.metadata || null,
+            createdBy: data.createdBy || null,
         },
     });
 }
@@ -59,5 +67,28 @@ export async function listNotifications(offset: number, limit: number) {
 
 export async function countNotifications() {
     return prisma.notifications.count();
+}
+
+// Get unread count for a user
+export async function getUnreadCount(userID: bigint) {
+    return prisma.notifications.count({
+        where: {
+            userID,
+            isRead: false,
+        },
+    });
+}
+
+// Mark all as read for a user
+export async function markAllAsRead(userID: bigint) {
+    return prisma.notifications.updateMany({
+        where: {
+            userID,
+            isRead: false,
+        },
+        data: {
+            isRead: true,
+        },
+    });
 }
 

@@ -4,6 +4,8 @@ import { videoService } from "../videos/video.service.js";
 import { CreateLikeRequest } from "./like.types.js";
 import { toJSON } from "../../common/utils.js";
 import { AppError } from "../../common/errors.js";
+import * as notificationService from "../notifications/notification.service.js";
+import { prisma } from "../../config/prisma.js";
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
     return (req: Request, res: Response, next: (err: any) => void) => {
@@ -23,6 +25,21 @@ export const likeVideo = asyncHandler(async (req: Request, res: Response) => {
     input.userID = BigInt(input.userID);
 
     await likeService.likeVideo(input.userID, input.vidID);
+
+    // Check and notify likes milestone
+    try {
+        const video = await videoService.getVideoById(resolvedVidID);
+        if (video) {
+            const channel = await prisma.channel.findUnique({ where: { channelID: video.channelID } });
+            if (channel) {
+                const likesCount = await likeService.getLikesCount(resolvedVidID);
+                await notificationService.checkAndNotifyLikesMilestone(channel.userID, likesCount);
+            }
+        }
+    } catch (notifErr) {
+        console.warn('Failed to send likes milestone notification:', notifErr);
+    }
+
     res.status(201).json({ message: "Video liked successfully" });
 });
 

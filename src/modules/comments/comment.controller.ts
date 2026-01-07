@@ -4,6 +4,8 @@ import { videoService } from "../videos/video.service.js";
 import { CreateCommentRequest, UpdateCommentRequest } from "./comment.types.js";
 import { toJSON } from "../../common/utils.js";
 import { AppError } from "../../common/errors.js";
+import * as notificationService from "../notifications/notification.service.js";
+import { prisma } from "../../config/prisma.js";
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
     return (req: Request, res: Response, next: (err: any) => void) => {
@@ -24,6 +26,38 @@ export const createComment = asyncHandler(async (req: Request, res: Response) =>
     input.userID = BigInt(input.userID);
 
     const created = await CommentService.createComment(input);
+
+    // Send notification to video owner about new comment
+    try {
+        const video = await videoService.getVideoById(resolvedVidID);
+        if (video) {
+            const channel = await prisma.channel.findUnique({ where: { channelID: video.channelID } });
+            const commenter = await prisma.users.findUnique({ where: { userID: input.userID } });
+            
+            if (channel && commenter && channel.userID !== input.userID) { // Don't notify if commenting on own video
+                const commentPreview = input.commentText.length > 50 
+                    ? input.commentText.substring(0, 50) + '...' 
+                    : input.commentText;
+                
+                await notificationService.notifyNewComment(
+                    channel.userID,
+                    input.userID,
+                    commenter.userName,
+                    video.vidID,
+                    video.title || 'Untitled',
+                    commentPreview
+                );
+            }
+
+            // Check and notify comment milestone
+            if (channel) {
+                await notificationService.checkAndNotifyCommentsMilestone(channel.userID, video.comments || 0);
+            }
+        }
+    } catch (notifErr) {
+        console.warn('Failed to send comment notification:', notifErr);
+    }
+
     res.status(201).json(toJSON(created));
 });
 

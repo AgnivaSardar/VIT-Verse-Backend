@@ -5,14 +5,22 @@ export interface Notification {
     entityID: bigint | null;
     message: string;
     isRead: boolean;
+    priority: string;
+    category: string | null;
+    metadata: any;
+    createdBy: bigint | null;
     createdAt: Date;
 }
 
 export interface CreateNotificationRequest {
     userID: bigint | null;
     type: string;
-    entityID: bigint;
+    entityID?: bigint | null;
     message: string;
+    priority?: string;
+    category?: string;
+    metadata?: any;
+    createdBy?: bigint | null;
 }
 
 export interface NotificationResponse extends Notification {}

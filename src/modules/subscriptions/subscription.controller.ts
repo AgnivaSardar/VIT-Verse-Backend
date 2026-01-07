@@ -3,6 +3,8 @@ import * as subscribeService from "./subscription.service.js";
 import { CreateSubscriptionRequest, DeleteSubscriptionRequest } from "./subscription.types.js";
 import { toJSON } from "../../common/utils.js";
 import { AuthRequest } from "../../middlewares/auth.middleware.js";
+import * as notificationService from "../notifications/notification.service.js";
+import { prisma } from "../../config/prisma.js";
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
     return (req: Request, res: Response, next: (err: any) => void) => {
@@ -16,6 +18,17 @@ export const subscribe = asyncHandler(async (req: Request, res: Response) => {
     const channelID: bigint = BigInt(input.channelID);
     const userID: bigint = BigInt(input.userID);
     await subscribeService.subscribe(channelID, userID);
+
+    // Check and notify subscriber milestone
+    try {
+        const channel = await prisma.channel.findUnique({ where: { channelID } });
+        if (channel) {
+            await notificationService.checkAndNotifySubscriberMilestone(channel.userID, Number(channel.channelSubscribers));
+        }
+    } catch (notifErr) {
+        console.warn('Failed to send subscriber milestone notification:', notifErr);
+    }
+
     res.status(201).json({ message: "Subscribed successfully" });
 });
 

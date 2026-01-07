@@ -3,6 +3,9 @@ import * as viewsService from "./views.service.js";
 import { CreateViewRequest } from "./views.types.js";
 import { toJSON } from "../../common/utils.js";
 import { AppError } from "../../common/errors.js";
+import * as notificationService from "../notifications/notification.service.js";
+import { prisma } from "../../config/prisma.js";
+import { videoService } from "../videos/video.service.js";
 
 function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
     return (req: Request, res: Response, next: (err: any) => void) => {
@@ -13,6 +16,25 @@ function asyncHandler(fn: (req: Request, res: Response) => Promise<void>) {
 export const createView = asyncHandler(async (req: Request, res: Response) => {
     const input: CreateViewRequest = req.body;
     await viewsService.createViewService(input);
+
+    // Check and notify views milestone
+    try {
+        const vidID = BigInt(input.vidID);
+        const video = await videoService.getVideoById(vidID);
+        if (video) {
+            const channel = await prisma.channel.findUnique({ where: { channelID: video.channelID } });
+            if (channel) {
+                // Get current view count from VideoStats
+                const stats = await prisma.videoStats.findUnique({ where: { vidID } });
+                if (stats) {
+                    await notificationService.checkAndNotifyViewsMilestone(channel.userID, Number(stats.viewsCount || 0));
+                }
+            }
+        }
+    } catch (notifErr) {
+        console.warn('Failed to send views milestone notification:', notifErr);
+    }
+
     res.status(201).json({ message: "View created successfully" });
 });
 

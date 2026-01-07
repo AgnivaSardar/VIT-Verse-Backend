@@ -12,6 +12,7 @@ import fs from 'fs';
 import path from 'path';
 import { compressAndScaleVideo } from './video.compress.js';
 import { videoCompressionConfig } from '../../config/videoCompression.js';
+import * as notificationService from '../notifications/notification.service.js';
 
 // Video handlers moved/merged during implementation
 
@@ -382,6 +383,13 @@ export const uploadVideoHandler = async (req: AuthRequest, res: Response) => {
       }
     }
 
+    // Notify user of successful upload
+    try {
+      await notificationService.notifyUploadSuccess(uploaderID, BigInt(video.vidID), video.title || 'Untitled');
+    } catch (notifErr) {
+      console.warn('Failed to send upload success notification:', notifErr);
+    }
+
     res.status(201).json({
       message: 'Video uploaded successfully. Processing in background...',
       // Return only a sanitized public view by default
@@ -389,6 +397,21 @@ export const uploadVideoHandler = async (req: AuthRequest, res: Response) => {
     });
   } catch (err: any) {
     await cleanupOnFailure();
+    
+    // Notify user of failed upload with stage info
+    try {
+      const uploaderID = req.user?.id ? BigInt(String(req.user.id)) : null;
+      if (uploaderID) {
+        let stage: 'client' | 'server' | 'storage' = 'server';
+        if (err.message?.includes('S3') || err.message?.includes('storage')) {
+          stage = 'storage';
+        }
+        await notificationService.notifyUploadFailed(uploaderID, stage, err.message || 'Unknown error');
+      }
+    } catch (notifErr) {
+      console.warn('Failed to send upload failure notification:', notifErr);
+    }
+
     if (err instanceof AppError) {
       res.status(err.statusCode).json({ message: err.message });
     } else {

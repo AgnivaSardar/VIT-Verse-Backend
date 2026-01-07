@@ -270,19 +270,24 @@ model Reports {
 }
 
 model Notifications {
-  notifID   BigInt   @id @default(autoincrement())
-  userID    BigInt
-  type      String
-  entityID  BigInt?
-  message   String
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  notifID    BigInt   @id @default(autoincrement())
+  userID     BigInt
+  type       String   // upload_success, upload_failed, comment, milestone, admin_message, reply, mention, video_processed
+  entityID   BigInt?  // videoID, commentID, channelID, etc
+  message    String
+  isRead     Boolean  @default(false)
+  priority   String   @default("normal") // low, normal, high, urgent
+  category   String?  // engagement, system, admin, milestone
+  metadata   Json?    // {stage: "client|server|storage", commenterName: "...", milestone: 100, videoTitle: "..."}
+  createdBy  BigInt?  // For admin notifications - which admin created it
+  createdAt  DateTime @default(now())
 
   user Users @relation(fields: [userID], references: [userID], onDelete: Cascade)
 
   @@index([userID])
   @@index([userID, isRead])
   @@index([createdAt(sort: Desc)])
+  @@index([priority])
 }
 
 model Jobs {
