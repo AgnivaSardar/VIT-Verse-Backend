@@ -35,7 +35,6 @@ export async function createNotification(data: {
             notifID: notification.notifID.toString(),
             message: data.message,
             type: data.type,
-            priority: data.priority || 'normal',
         });
     } catch (err) {
         // Socket not initialized yet, continue gracefully

@@ -33,7 +33,12 @@ export const likeVideo = asyncHandler(async (req: Request, res: Response) => {
             const channel = await prisma.channel.findUnique({ where: { channelID: video.channelID } });
             if (channel) {
                 const likesCount = await likeService.getLikesCount(resolvedVidID);
-                await notificationService.checkAndNotifyLikesMilestone(channel.userID, likesCount);
+                await notificationService.checkAndNotifyLikesMilestone(
+                    channel.userID,
+                    video.vidID,
+                    video.title || 'Untitled',
+                    likesCount
+                );
             }
         }
     } catch (notifErr) {

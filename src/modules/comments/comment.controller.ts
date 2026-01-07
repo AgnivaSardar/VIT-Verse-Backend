@@ -35,9 +35,9 @@ export const createComment = asyncHandler(async (req: Request, res: Response) =>
             const commenter = await prisma.users.findUnique({ where: { userID: input.userID } });
             
             if (channel && commenter && channel.userID !== input.userID) { // Don't notify if commenting on own video
-                const commentPreview = input.commentText.length > 50 
-                    ? input.commentText.substring(0, 50) + '...' 
-                    : input.commentText;
+                const commentPreview = input.description.length > 50 
+                    ? input.description.substring(0, 50) + '...' 
+                    : input.description;
                 
                 await notificationService.notifyNewComment(
                     channel.userID,
@@ -51,7 +51,15 @@ export const createComment = asyncHandler(async (req: Request, res: Response) =>
 
             // Check and notify comment milestone
             if (channel) {
-                await notificationService.checkAndNotifyCommentsMilestone(channel.userID, video.comments || 0);
+                // Get comment count from VideoStats
+                const stats = await prisma.videoStats.findUnique({ where: { vidID: video.vidID } });
+                const commentCount = stats ? Number(stats.commentsCount || 0) : 0;
+                await notificationService.checkAndNotifyCommentsMilestone(
+                    channel.userID,
+                    video.vidID,
+                    video.title || 'Untitled',
+                    commentCount
+                );
             }
         }
     } catch (notifErr) {

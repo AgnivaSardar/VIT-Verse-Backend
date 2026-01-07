@@ -27,7 +27,12 @@ export const createView = asyncHandler(async (req: Request, res: Response) => {
                 // Get current view count from VideoStats
                 const stats = await prisma.videoStats.findUnique({ where: { vidID } });
                 if (stats) {
-                    await notificationService.checkAndNotifyViewsMilestone(channel.userID, Number(stats.viewsCount || 0));
+                    await notificationService.checkAndNotifyViewsMilestone(
+                        channel.userID,
+                        video.vidID,
+                        video.title || 'Untitled',
+                        Number(stats.viewsCount || 0)
+                    );
                 }
             }
         }
