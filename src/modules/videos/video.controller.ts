@@ -392,8 +392,8 @@ export const uploadVideoHandler = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json({
       message: 'Video uploaded successfully. Processing in background...',
-      // Return full video data for the uploader (owner) - they should see unsanitized data
-      video: toJSON(decorateVideoMedia(video as any, process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`)),
+      // Return only a sanitized public view by default
+      video: toJSON(sanitizeVideoForPublic(decorateVideoMedia(video as any, process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`))),
     });
   } catch (err: any) {
     await cleanupOnFailure();
@@ -421,7 +421,7 @@ export const uploadVideoHandler = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const getVideoHandler = async (req: AuthRequest, res: Response) => {
+export const getVideoHandler = async (req: Request, res: Response) => {
   try {
     const idParam = req.params.id;
     if (!idParam) throw new AppError('Video ID is required', 400);
@@ -441,17 +441,8 @@ export const getVideoHandler = async (req: AuthRequest, res: Response) => {
 
     const baseUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
     const videoData = decorateVideoMedia(video as any, baseUrl);
-    
-    // Check if the requester is the video owner or super admin
-    const isVideoOwner = req.user && video.channel && BigInt(video.channel.userID) === BigInt(req.user.id);
-    const isSuperAdmin = req.user?.isSuperAdmin === true;
-    
-    // Video owners and super admins see full data; others see sanitized version
-    if (isVideoOwner || isSuperAdmin) {
-      res.json(toJSON(videoData));
-    } else {
-      res.json(toJSON(sanitizeVideoForPublic(videoData)));
-    }
+    // Sanitize before sending publicly
+    res.json(toJSON(sanitizeVideoForPublic(videoData)));
   } catch (err: any) {
     console.error('❌ Get video error:', err);
     if (err instanceof AppError) {
@@ -596,10 +587,10 @@ export const getMyVideosHandler = async (req: AuthRequest, res: Response) => {
       Number(page),
       Number(limit),
     );
-    // Video owners see full data (unsanitized) for their own videos
+    // Even for owners, do not leak raw storage keys — return sanitized views.
     const baseUrl = process.env.BACKEND_URL || process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
-    const videoData = videos.map((v: any) => decorateVideoMedia(v, baseUrl));
-    res.json(toJSON(videoData));
+    const safe = videos.map((v: any) => sanitizeVideoForPublic(decorateVideoMedia(v, baseUrl)));
+    res.json(toJSON(safe));
   } catch (err) {
     console.error('Get my videos error:', err);
     if (err instanceof AppError) {
