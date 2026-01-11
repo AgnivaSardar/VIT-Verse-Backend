@@ -33,15 +33,18 @@ export const getUser = asyncHandler(async (req: AuthRequest, res: Response) => {
   // Check if the requester is a super admin
   const isSuperAdmin = req.user?.isSuperAdmin === true;
   
-  // Non-super-admins only get minimal user data (userName and userID)
-  if (!isSuperAdmin) {
-    const minimalData = sanitizeUserForNonAdmin(user);
-    res.json(toJSON(minimalData));
+  // Check if the requester is viewing their own profile
+  const isOwnProfile = req.user?.id !== undefined && BigInt(req.user.id) === userID;
+  
+  // Users viewing their own profile get full data (sanitized to remove passwords/tokens)
+  if (isOwnProfile || isSuperAdmin) {
+    res.json(toJSON(sanitizeUser(user)));
     return;
   }
   
-  // Super admins get full user data (but still sanitized to remove passwords)
-  res.json(toJSON(sanitizeUser(user)));
+  // Other users only get minimal user data (userName and userID)
+  const minimalData = sanitizeUserForNonAdmin(user);
+  res.json(toJSON(minimalData));
 });
 
 export const updateUser = asyncHandler(async (req: AuthRequest, res: Response) => {
