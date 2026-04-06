@@ -17,7 +17,7 @@ export function cacheResponse(ttlSeconds: number, keyBuilder?: (req: Request) =>
       console.warn('Redis cache get failed:', err);
     }
 
-    const originalJson = res.json.bind(res);
+    const originalJson: Response['json'] = res.json.bind(res);
     res.json = ((body: any) => {
       // Only cache successful responses
       if (res.statusCode >= 200 && res.statusCode < 300) {
@@ -26,7 +26,7 @@ export function cacheResponse(ttlSeconds: number, keyBuilder?: (req: Request) =>
         });
       }
       return originalJson(body);
-    }) as any;
+    }) as unknown as Response['json'];
 
     next();
   };

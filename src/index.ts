@@ -11,14 +11,17 @@ import { initSocketIO } from './modules/realtime/socket.server.js';
 const PORT = Number(process.env.PORT) || 5000;
 const HOST = process.env.HOST || '0.0.0.0';
 let server: http.Server;
+let consecutiveDbHealthFailures = 0;
 
 // Monitor database connection health
 async function checkDatabaseHealth() {
   try {
     await prisma.$queryRaw`SELECT 1`;
+    consecutiveDbHealthFailures = 0;
     return true;
- } catch (error) {
+  } catch (error) {
     console.error('🔴 Database health check failed:', error);
+    consecutiveDbHealthFailures += 1;
     return false;
   }
 }
@@ -28,12 +31,17 @@ function monitorConnectionPool() {
   setInterval(async () => {
     const isHealthy = await checkDatabaseHealth();
     if (!isHealthy) {
-      console.error('⚠️  Database connection unhealthy! Attempting recovery...');
-      try {
-        await prisma.$disconnect();
-        console.log('🔄 Disconnected from database');
-      } catch (err) {
-        console.error('Failed to disconnect:', err);
+      // Supabase poolers can close connections during maintenance; avoid forcing disconnect on first failure.
+      if (consecutiveDbHealthFailures >= 3) {
+        console.error(`⚠️  Database unhealthy for ${consecutiveDbHealthFailures} checks. Attempting reconnect...`);
+        try {
+          await prisma.$connect();
+          console.log('🔄 Prisma reconnect attempt completed');
+        } catch (err) {
+          console.error('Prisma reconnect attempt failed:', err);
+        }
+      } else {
+        console.warn(`⚠️  Transient DB health failure (${consecutiveDbHealthFailures}/3). Will retry.`);
       }
     }
   }, 30000);

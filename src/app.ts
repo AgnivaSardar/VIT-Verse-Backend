@@ -59,22 +59,42 @@ if (process.env.NODE_ENV === 'production') {
 const allowedOrigins = [
   'https://vit-verse-zeta.vercel.app',
   'https://api.vitverse.abrdns.com',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5174',
 ];
+
+// Add any additional origins from environment variable
+if (process.env.CLIENT_ORIGIN) {
+  const envOrigins = process.env.CLIENT_ORIGIN.split(',').map(o => o.trim());
+  envOrigins.forEach(origin => {
+    if (!allowedOrigins.includes(origin)) {
+      allowedOrigins.push(origin);
+    }
+  });
+}
+
 console.log('🔐 CORS allowed origins:', allowedOrigins);
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // allow curl/mobile/undefined-origins
+    // Allow requests with no origin (like mobile apps, Postman, curl)
+    if (!origin) return callback(null, true);
+    
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    return callback(new Error('CORS blocked'));
+    
+    console.warn('🚫 CORS blocked origin:', origin);
+    return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-bypass-rate-limit'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-bypass-rate-limit', 'X-Requested-With'],
   exposedHeaders: ['Content-Length', 'Content-Range'],
   maxAge: 600,
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
 }));
 
 // Note: app.use(cors(...)) handles preflight automatically in Express 5

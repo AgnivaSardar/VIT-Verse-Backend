@@ -55,6 +55,7 @@
     "dist",
     "prisma",
     "scripts",
-    "**/*.test.ts"
+      "**/*.test.ts",
+      "prisma.config.ts"
   ]
 }
